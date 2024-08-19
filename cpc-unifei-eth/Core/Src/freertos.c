@@ -144,6 +144,7 @@ struct udp_pcb *udp_pcb_server;
 
 void udp_receive_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
+	static uint8_t counter = 0;
 	if (p != NULL)
 	{
 		// Send a response back to the sender (optional)
@@ -152,7 +153,10 @@ void udp_receive_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const 
 		{
 			memcpy(reply->payload, p->payload, p->len);
 			udp_sendto(pcb, reply, addr, port);
-			HAL_GPIO_TogglePin(USER_LED2_GPIO_Port, USER_LED2_Pin);
+			if (counter++ == 0)
+			{
+				HAL_GPIO_TogglePin(USER_LED2_GPIO_Port, USER_LED2_Pin);
+			}
 			pbuf_free(reply);
 		}
 

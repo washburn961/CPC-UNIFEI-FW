@@ -88,8 +88,8 @@ void Error_Handler(void);
 #define ADC_BUSY_EXTI_IRQn EXTI15_10_IRQn
 #define ADC_CONVST_Pin GPIO_PIN_12
 #define ADC_CONVST_GPIO_Port GPIOD
-#define ADC_RESET_OD_Pin GPIO_PIN_13
-#define ADC_RESET_OD_GPIO_Port GPIOD
+#define ADC_RESET_Pin GPIO_PIN_13
+#define ADC_RESET_GPIO_Port GPIOD
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14

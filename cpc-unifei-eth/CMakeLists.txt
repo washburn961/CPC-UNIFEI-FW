@@ -4,7 +4,7 @@ project(cpc-unifei-eth LANGUAGES C CXX ASM)
 
 find_bsp(ID com.sysprogs.project_importers.stm32.cubemx SOURCE_PROJECT cpc-unifei-eth.ioc)
 
-bsp_include_directories(.)
+bsp_include_directories(. ../phasor-estimation-filters/phasorfilters/inc)
 add_bsp_based_executable(
 	NAME cpc-unifei-eth
 	GENERATE_BIN
@@ -18,3 +18,4 @@ add_bsp_based_executable(
 		${BSP_ROOT}/ads8686s_interface.c
 		${BSP_ROOT}/ads8686s_interface.h)
 
+add_subdirectory(../phasor-estimation-filters/phasorfilters phasorfilters)

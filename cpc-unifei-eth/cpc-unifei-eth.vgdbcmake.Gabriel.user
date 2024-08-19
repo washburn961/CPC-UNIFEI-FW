@@ -25,6 +25,18 @@
         <f>false</f>
         <d>false</d>
       </p5>
+      <p5>
+        <g>rx</g>
+        <b>com.sysprogs.types.builtin.UInt16</b>
+        <a>true</a>
+        <h>
+          <ComparisonMode>Equals</ComparisonMode>
+          <Enabled>false</Enabled>
+        </h>
+        <e>true</e>
+        <f>false</f>
+        <d>false</d>
+      </p5>
     </b>
     <c>
       <a>

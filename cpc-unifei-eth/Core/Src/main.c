@@ -20,7 +20,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
-#include "dma.h"
 #include "lwip.h"
 #include "memorymap.h"
 #include "octospi.h"
@@ -31,6 +30,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
 #include "ads8686s.h"
+#include "ring_buffer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,7 +111,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_ADC3_Init();
   MX_OCTOSPI1_Init();
   MX_SPI1_Init();
