@@ -3,85 +3,172 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ADS_CONFIGURATION 0x02
-#define ADS_CHANNEL_SEL 0x03
-#define ADS_RANGE_A1 0x04
-#define ADS_RANGE_A2 0x05
-#define ADS_RANGE_B1 0x06
-#define ADS_RANGE_B2 0x07
-#define ADS_STATUS 0x08
-#define ADS_OVER_RANGE_SETTING_A 0x0A
-#define ADS_OVER_RANGE_SETTING_B 0x0B
-#define ADS_LPF_CONFIG 0x0D
-#define ADS_DEVICE_ID 0x10
-#define ADS_SEQ_STACK_0 0x20
-#define ADS_SEQ_STACK_1 0x21
-#define ADS_SEQ_STACK_2 0x22
-#define ADS_SEQ_STACK_3 0x23
-#define ADS_SEQ_STACK_4 0x24
-#define ADS_SEQ_STACK_5 0x25
-#define ADS_SEQ_STACK_6 0x26
-#define ADS_SEQ_STACK_7 0x27
-#define ADS_SEQ_STACK_8 0x28
-#define ADS_SEQ_STACK_9 0x29
-#define ADS_SEQ_STACK_10 0x2A
-#define ADS_SEQ_STACK_11 0x2B
-#define ADS_SEQ_STACK_12 0x2C
-#define ADS_SEQ_STACK_13 0x2D
-#define ADS_SEQ_STACK_14 0x2E
-#define ADS_SEQ_STACK_15 0x2F
-#define ADS_SEQ_STACK_16 0x30
-#define ADS_SEQ_STACK_17 0x31
-#define ADS_SEQ_STACK_18 0x32
-#define ADS_SEQ_STACK_19 0x33
-#define ADS_SEQ_STACK_20 0x34
-#define ADS_SEQ_STACK_21 0x35
-#define ADS_SEQ_STACK_22 0x36
-#define ADS_SEQ_STACK_23 0x37
-#define ADS_SEQ_STACK_24 0x38
-#define ADS_SEQ_STACK_25 0x39
-#define ADS_SEQ_STACK_26 0x3A
-#define ADS_SEQ_STACK_27 0x3B
-#define ADS_SEQ_STACK_28 0x3C
-#define ADS_SEQ_STACK_29 0x3D
-#define ADS_SEQ_STACK_30 0x3E
-#define ADS_SEQ_STACK_31 0x3F
+/******************************************************************************/
+/********************** Macros and Constants Definitions **********************/
+/******************************************************************************/
+/* ADS8686S CORE */
+#define ADS8686S_REG_PCORE_VERSION      0x400
+#define ADS8686S_REG_ID                 0x404
+#define ADS8686S_REG_UP_SCRATCH         0x408
+#define ADS8686S_REG_UP_IF_TYPE         0x40C
+#define ADS8686S_REG_UP_CTRL            0x440
+#define ADS8686S_REG_UP_CONV_RATE       0x444
+#define ADS8686S_REG_UP_BURST_LENGTH    0x448
+#define ADS8686S_REG_UP_READ_DATA       0x44C
+#define ADS8686S_REG_UP_WRITE_DATA      0x450
 
-// Function pointer definitions for IO operations
-typedef struct {
-	void(*set_cs)(void);
-	void(*reset_cs)(void);
-	void(*reset)(void);  // Function to RESET the ADC
-	void(*set_convst)(void);  // Function to set CONVST high
-	void(*reset_convst)(void);  // Function to reset CONVST low
-	void(*spi_transmit)(uint16_t data);  // Function to transmit data over SPI
-	uint16_t(*spi_receive)(void);  // Function to receive data over SPI
-	void(*spi_receive_dma)(void);  // Function to reset CONVST low
-	void(*on_conversion_complete)(uint16_t result1, uint16_t result2);  // Callback function for when conversion is complete
-} ADS8686S_IO;
+/* ADS8686S_REG_UP_CTRL */
+#define ADS8686S_CTRL_RESETN            (1 << 0)
+#define ADS8686S_CTRL_CNVST_EN          (1 << 1)
 
-// Enumeration for the state machine states
-typedef enum {
-	ADS_STATE_IDLE,
-	ADS_STATE_CONVERTING,
-	ADS_STATE_WAIT_FOR_BUSY_LOW,
-	ADS_STATE_READING_DATA
-} ADS8686S_State;
+#define ADS8686S_REG_CONFIG             0x02
+#define ADS8686S_REG_CHANNEL            0x03
+#define ADS8686S_REG_INPUT_RANGE_A1     0x04
+#define ADS8686S_REG_INPUT_RANGE_A2     0x05
+#define ADS8686S_REG_INPUT_RANGE_B1     0x06
+#define ADS8686S_REG_INPUT_RANGE_B2     0x07
+#define ADS8686S_REG_SEQUENCER_STACK(x) (0x20 + (x))
 
-// Structure to hold the state and IO operations for the ADS8686S
-typedef struct {
-	ADS8686S_IO io;  // IO operations
-	ADS8686S_State state;  // Current state
-	bool busy_high_flag;  // Internal flag for BUSY high state
-	bool busy_low_flag;  // Internal flag for BUSY low state
-} ADS8686S;
+/* ADS8686S_REG_CONFIG */
+#define ADS8686S_SDEF                   (1 << 7)
+#define ADS8686S_BURSTEN(x)             ((x & 1) << 6)
+#define ADS8686S_BURSTEN_MASK           (1 << 6)
+#define ADS8686S_SEQEN(x)               ((x & 1) << 5)
+#define ADS8686S_SEQEN_MASK             (1 << 5)
+#define ADS8686S_OS(x)                  (((x) & 0x7) << 2)
+#define ADS8686S_STATUSEN               (1 << 1)
+#define ADS8686S_STATUSEN_MASK          (1 << 1)
+#define ADS8686S_CRCEN                  (1 << 0)
+#define ADS8686S_CRCEN_MASK             (1 << 0)
 
-// Function prototypes
-void ADS8686S_Init(ADS8686S_IO *io);  // Initialize the ADS8686S
-void ADS8686S_StartConversion(void);  // Start a conversion
-void ADS8686S_OnBusyRising(void);  // Function to be called on BUSY rising edge
-void ADS8686S_OnBusyFalling(void);  // Function to be called on BUSY falling edge
-void ADS8686S_Reset(void);  // Function to RESET the ADC
-void ADS8686S_Process(void);  // Function to process the state machine
-void ADS8686S_WriteReg(uint8_t regaddr, uint8_t data);
-void ADS8686S_ReadReg(uint8_t regaddr, uint16_t *out_data);
+/* ADS8686S_REG_CHANNEL */
+#define ADS8686S_CHA_MASK               0xF
+#define ADS8686S_CHB_MASK               0xF0
+#define ADS8686S_CHB_OFFSET             4
+#define ADS8686S_CHANNELS_MASK          0xFF
+
+/* ADS8686S_REG_INPUT_RANGE */
+#define ADS8686S_INPUT_RANGE(ch, x)     (((x) & 0x3) << (((ch) & 0x3) * 2))
+
+/* ADS8686S_REG_SEQUENCER_STACK(x) */
+#define ADS8686S_ADDR(x)                (((x) & 0x7F) << 9)
+#define ADS8686S_SSREN                  (1 << 8)
+#define ADS8686S_BSEL(x)                (((x) & 0xF) << 4)
+#define ADS8686S_ASEL(x)                (((x) & 0xF) << 0)
+
+/* ADS8686S_REG_STATUS */
+#define ADS8686S_STATUS_A(x)            (((x) & 0xF) << 12)
+#define ADS8686S_STATUS_B(x)            (((x) & 0xF) << 8)
+#define ADS8686S_STATUS_CRC(x)          (((x) & 0xFF) << 0)
+
+/* ADS8686S conversion results */
+#define ADS8686S_CHANNEL_A_SELF_TEST_VALUE 0xAAAA
+#define ADS8686S_CHANNEL_B_SELF_TEST_VALUE 0x5555
+
+/* ADS8686S_REG_PWM */
+#define ADS8686S_TRIGGER_PULSE_WIDTH_NS	        50
+
+/******************************************************************************/
+/*************************** Types Declarations *******************************/
+/******************************************************************************/
+enum ads8686s_channel {
+	ADS8686S_VA0,
+	ADS8686S_VA1,
+	ADS8686S_VA2,
+	ADS8686S_VA3,
+	ADS8686S_VA4,
+	ADS8686S_VA5,
+	ADS8686S_VA6,
+	ADS8686S_VA7,
+	ADS8686S_VA_VCC,
+	ADS8686S_VA_ALDO,
+	ADS8686S_VA_RESERVED1,
+	ADS8686S_VA_SELF_TEST,
+	ADS8686S_VA_RESERVED2,
+	ADS8686S_VB0,
+	ADS8686S_VB1,
+	ADS8686S_VB2,
+	ADS8686S_VB3,
+	ADS8686S_VB4,
+	ADS8686S_VB5,
+	ADS8686S_VB6,
+	ADS8686S_VB7,
+	ADS8686S_VB_VCC,
+	ADS8686S_VB_ALDO,
+	ADS8686S_VB_RESERVED1,
+	ADS8686S_VB_SELF_TEST,
+	ADS8686S_VB_RESERVED2,
+};
+
+enum ads8686s_range {
+	ADS8686S_2V5 = 1,
+	ADS8686S_5V  = 2,
+	ADS8686S_10V = 3,
+};
+
+enum ads8686s_osr {
+	ADS8686S_OSR_0,
+	ADS8686S_OSR_2,
+	ADS8686S_OSR_4,
+	ADS8686S_OSR_8,
+	ADS8686S_OSR_16,
+	ADS8686S_OSR_32,
+	ADS8686S_OSR_64,
+	ADS8686S_OSR_128,
+};
+
+struct ads8686s_device
+{
+	enum ads8686s_range range_a;
+	enum ads8686s_range range_b;
+	enum ads8686s_osr osr;
+};
+
+struct ads8686s_conversion_result {
+	uint16_t channel_a;
+	uint16_t channel_b;
+};
+
+/******************************************************************************/
+/************************ Functions Declarations ******************************/
+/******************************************************************************/
+/* SPI read from device. */
+int32_t ads8686s_read(struct ads8686s_device *dev,
+	uint8_t reg_addr,
+	uint16_t *reg_data);
+/* SPI write to device. */
+int32_t ads8686s_write(struct ads8686s_device *dev,
+	uint8_t reg_addr,
+	uint16_t reg_data);
+/* SPI read from device using a mask. */
+int32_t ads8686s_read_mask(struct ads8686s_device *dev,
+	uint8_t reg_addr,
+	uint16_t mask,
+	uint16_t *data);
+/* SPI write to device using a mask. */
+int32_t ads8686s_write_mask(struct ads8686s_device *dev,
+	uint8_t reg_addr,
+	uint16_t mask,
+	uint16_t data);
+int32_t ads8686s_reset(struct ads8686s_device *dev);
+int32_t ads8686s_set_range(struct ads8686s_device *dev,
+	enum ads8686s_channel ch,
+	enum ads8686s_range range);
+/* Set the oversampling ratio. */
+int32_t ads8686s_set_oversampling_ratio(struct ads8686s_device *dev,
+	enum ads8686s_osr osr);
+/* Read data in serial mode. */
+int32_t ads8686s_read_data_serial(struct ads8686s_device *dev,
+	struct ads8686s_conversion_result *results,
+	uint32_t samples);
+/* Initialize the device. */
+int32_t ads8686s_setup(struct ads8686s_device *device);
+/* Read conversion results. */
+int32_t ads8686s_read_channel_source(struct ads8686s_device *dev,
+	enum ads8686s_channel *ch_a,
+	enum ads8686s_channel *ch_b);
+/* Select the input source for a channel. */
+int32_t ads8686s_select_channel_source(struct ads8686s_device *dev,
+	enum ads8686s_channel ch);
+
+int32_t ads8686s_self_test(struct ads8686s_device *dev);

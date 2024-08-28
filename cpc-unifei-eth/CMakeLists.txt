@@ -11,11 +11,13 @@ add_bsp_based_executable(
 	GENERATE_MAP
 	SOURCES
 		${BSP_ROOT}/lwiperf.c
-		${BSP_ROOT}/is25lp064a.c
-		${BSP_ROOT}/is25lp064a.h
 		${BSP_ROOT}/ads8686s.c
 		${BSP_ROOT}/ads8686s.h
-		${BSP_ROOT}/ads8686s_interface.c
-		${BSP_ROOT}/ads8686s_interface.h)
+		${BSP_ROOT}/command_system.h
+		${BSP_ROOT}/command_system.c
+		${BSP_ROOT}/command_system_interface.h
+		${BSP_ROOT}/command_system_interface.c
+		${BSP_ROOT}/udp_server.h
+		${BSP_ROOT}/udp_server.c)
 
 add_subdirectory(../phasor-estimation-filters/phasorfilters phasorfilters)

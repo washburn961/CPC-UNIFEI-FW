@@ -20,7 +20,7 @@
       <Version>
         <GCC>13.3.1</GCC>
         <GDB>15.1</GDB>
-        <Revision>2</Revision>
+        <Revision>3</Revision>
       </Version>
     </ToolchainID>
     <RelativeSourceDirectory />

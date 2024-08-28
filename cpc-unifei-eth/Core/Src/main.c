@@ -220,14 +220,7 @@ void PeriphCommonClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if (HAL_GPIO_ReadPin(ADC_BUSY_GPIO_Port, ADC_BUSY_Pin) == GPIO_PIN_SET)  // Replace GPIOx with your GPIO port
-	{
-		ADS8686S_OnBusyRising();
-	}
-	else
-	{
-		ADS8686S_OnBusyFalling();
-	}
+
 }
 /* USER CODE END 4 */
 

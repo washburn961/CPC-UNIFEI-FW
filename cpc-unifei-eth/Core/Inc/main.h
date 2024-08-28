@@ -94,6 +94,22 @@ void Error_Handler(void);
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
+#define OUT1_A_OUT_Pin GPIO_PIN_0
+#define OUT1_A_OUT_GPIO_Port GPIOD
+#define OUT4_A_OUT_Pin GPIO_PIN_1
+#define OUT4_A_OUT_GPIO_Port GPIOD
+#define OUT3_A_OUT_Pin GPIO_PIN_3
+#define OUT3_A_OUT_GPIO_Port GPIOD
+#define OUT2_A_OUT_Pin GPIO_PIN_4
+#define OUT2_A_OUT_GPIO_Port GPIOD
+#define OUT1_B_OUT_Pin GPIO_PIN_5
+#define OUT1_B_OUT_GPIO_Port GPIOD
+#define OUT3_B_OUT_Pin GPIO_PIN_6
+#define OUT3_B_OUT_GPIO_Port GPIOD
+#define OUT2_B_OUT_Pin GPIO_PIN_9
+#define OUT2_B_OUT_GPIO_Port GPIOG
+#define OUT4_B_OUT_Pin GPIO_PIN_10
+#define OUT4_B_OUT_GPIO_Port GPIOG
 
 /* USER CODE BEGIN Private defines */
 

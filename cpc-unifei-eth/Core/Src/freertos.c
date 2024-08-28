@@ -27,12 +27,12 @@
 /* USER CODE BEGIN Includes */
 /* ETH_CODE: add lwiperf, see comment in StartDefaultTask function */
 #include "lwip.h"
-#include "udp.h"
-#include "lwip/apps/lwiperf.h"
+#include "udp_server.h"
 #include "adc.h"
 #include <string.h>
 #include "octospi.h"
-#include "ads8686s_interface.h"
+#include "ads8686s.h"
+#include "command_system.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,6 +52,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+struct ads8686s_device dev;
+uint16_t ret = 0;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -101,7 +103,6 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-	ADS8686S_Interface_Init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -140,43 +141,6 @@ void MX_FREERTOS_Init(void) {
   * @param  argument: Not used
   * @retval None
   */
-struct udp_pcb *udp_pcb_server;
-
-void udp_receive_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
-{
-	static uint8_t counter = 0;
-	if (p != NULL)
-	{
-		// Send a response back to the sender (optional)
-		struct pbuf *reply = pbuf_alloc(PBUF_TRANSPORT, p->len, PBUF_RAM);
-		if (reply != NULL)
-		{
-			memcpy(reply->payload, p->payload, p->len);
-			udp_sendto(pcb, reply, addr, port);
-			if (counter++ == 0)
-			{
-				HAL_GPIO_TogglePin(USER_LED2_GPIO_Port, USER_LED2_Pin);
-			}
-			pbuf_free(reply);
-		}
-
-		// Free the received packet buffer
-		pbuf_free(p);
-	}
-}
-
-void udp_server_init(void)
-{
-	udp_pcb_server = udp_new();
-	if (udp_pcb_server != NULL)
-	{
-		err_t err = udp_bind(udp_pcb_server, IP_ADDR_ANY, 80); // Bind to port 80
-		if (err == ERR_OK)
-		{
-			udp_recv(udp_pcb_server, udp_receive_callback, NULL); // Set up the receive callback
-		}
-	}
-}
 
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
@@ -192,16 +156,11 @@ void StartDefaultTask(void *argument)
      * The default include path should already contain
      * 'lwip/apps/lwiperf.h'
      */
-	LOCK_TCPIP_CORE();
-	lwiperf_start_tcp_server_default(NULL, NULL);
-
-	ip4_addr_t remote_addr;
-	IP4_ADDR(&remote_addr, 192, 168, 1, 11);
-	lwiperf_start_tcp_client_default(&remote_addr, NULL, NULL);
-	
-	// Initialize the UDP server
 	udp_server_init();
-	UNLOCK_TCPIP_CORE();
+	
+	ads8686s_setup(&dev);
+	ads8686s_read(&dev, ADS8686S_REG_CONFIG, &ret);
+
 	/* Infinite loop */
 	for (;;)
 	{
@@ -222,25 +181,14 @@ void SendTemperatureUDP(float temperature)
 {
 	char message[50];
 	struct pbuf *p;
+	ip_addr_t dest_ip;
+	IP4_ADDR(&dest_ip, 192, 168, 1, 11);
 
 	// Format the temperature as a string with "Celsius"
 	snprintf(message, sizeof(message), "Temperature: %.2f Celsius", temperature);
 
 	// Allocate a pbuf for the message
-	LOCK_TCPIP_CORE();
-	p = pbuf_alloc(PBUF_TRANSPORT, strlen(message), PBUF_RAM);
-	if (p != NULL)
-	{
-		// Copy the message into the pbuf
-		memcpy(p->payload, message, strlen(message));
-
-		// Send the pbuf using the UDP server PCB
-		udp_sendto(udp_pcb_server, p, IP_ADDR_BROADCAST, 80);
-
-		// Free the pbuf
-		pbuf_free(p);
-	}
-	UNLOCK_TCPIP_CORE();
+	udp_server_send(IPV4_ADDR(192, 168, 1, 11), 80, message, sizeof(message));
 }
 
 uint32_t temp_counts = 0;
