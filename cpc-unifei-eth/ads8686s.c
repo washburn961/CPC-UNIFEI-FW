@@ -24,17 +24,29 @@ int32_t ads8686s_read(struct ads8686s_device *dev,
 	uint8_t tx_buf[2] = { 0 };
 	uint8_t rx_buf[2] = { 0 };
 	
-	tx_buf[0] = 0x00 | ((reg_addr & 0x3F) << 1);
-	tx_buf[1] = 0x00;
-	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1, tx_buf, rx_buf, 2, 1000);
+	tx_buf[0] = 0x00;
+	tx_buf[1] = 0x00 | ((reg_addr & 0x3F) << 1);
+//	tx_buf[0] = 0x00 | ((reg_addr & 0x3F) << 1);
+//	tx_buf[1] = 0x00;
+//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1, tx_buf, rx_buf, 1, 1000);
+//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_SET);
 	
-	tx_buf[0] = 0x00 | ((reg_addr & 0x3F) << 1);
+//	tx_buf[0] = 0x00;
+//	tx_buf[1] = 0x00;
+//	rx_buf[0] = 0x00;
+//	rx_buf[1] = 0x00;
+//	//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_RESET);
+//	HAL_SPI_TransmitReceive(&hspi1, tx_buf, rx_buf, 1, 1000);
+//	//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_SET);
+	
+	tx_buf[0] = 0x00;
 	tx_buf[1] = 0x00;
 	rx_buf[0] = 0x00;
 	rx_buf[1] = 0x00;
-	HAL_SPI_TransmitReceive(&hspi1, tx_buf, rx_buf, 2, 1000);
-	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1, tx_buf, rx_buf, 1, 1000);
+//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_SET);
 	
 	*reg_data = ((rx_buf[0] & 0x01) << 8) | rx_buf[1];
 	
@@ -52,9 +64,9 @@ int32_t ads8686s_write(struct ads8686s_device *dev,
 	tx_buf[0] = 0x80 | ((reg_addr & 0x3F) << 1) | ((reg_data & 0x100) >> 8);
 	tx_buf[1] = (reg_data & 0xFF);
 	
-	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_TransmitReceive(&hspi1, tx_buf, rx_buf, 2, 1000);
-	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_RESET);
+	HAL_SPI_TransmitReceive(&hspi1, tx_buf, rx_buf, 1, 1000);
+//	HAL_GPIO_WritePin(ADC_CS_GPIO_Port, ADC_CS_Pin, GPIO_PIN_SET);
 	
 	return 0;
 }

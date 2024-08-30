@@ -159,7 +159,13 @@ void StartDefaultTask(void *argument)
 	udp_server_init();
 	
 	ads8686s_setup(&dev);
-	ads8686s_read(&dev, ADS8686S_REG_CONFIG, &ret);
+	ads8686s_read(&dev, 0x2, &ret);
+	ads8686s_read(&dev, 0x3, &ret);
+	ads8686s_read(&dev, 0x4, &ret);
+	ads8686s_read(&dev, 0x5, &ret);
+	ads8686s_read(&dev, 0x6, &ret);
+	ads8686s_read(&dev, 0x7, &ret);
+	ads8686s_read(&dev, 0x8, &ret);
 
 	/* Infinite loop */
 	for (;;)

@@ -161,10 +161,8 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
-  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = 64;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 5;
@@ -209,8 +207,19 @@ void PeriphCommonClock_Config(void)
 
   /** Initializes the peripherals clock
   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CKPER;
-  PeriphClkInitStruct.CkperClockSelection = RCC_CLKPSOURCE_HSI;
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_SPI1
+                              |RCC_PERIPHCLK_CKPER;
+  PeriphClkInitStruct.PLL2.PLL2M = 5;
+  PeriphClkInitStruct.PLL2.PLL2N = 64;
+  PeriphClkInitStruct.PLL2.PLL2P = 10;
+  PeriphClkInitStruct.PLL2.PLL2Q = 2;
+  PeriphClkInitStruct.PLL2.PLL2R = 2;
+  PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_2;
+  PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
+  PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+  PeriphClkInitStruct.CkperClockSelection = RCC_CLKPSOURCE_HSE;
+  PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL2;
+  PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();

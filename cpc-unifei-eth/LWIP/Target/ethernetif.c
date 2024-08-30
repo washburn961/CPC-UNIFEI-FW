@@ -89,14 +89,14 @@
 /* Data Type Definitions */
 typedef enum
 {
-	RX_ALLOC_OK    = 0x00,
-	RX_ALLOC_ERROR = 0x01
+  RX_ALLOC_OK       = 0x00,
+  RX_ALLOC_ERROR    = 0x01
 } RxAllocStatusTypeDef;
 
 typedef struct
 {
-	struct pbuf_custom pbuf_custom;
-	uint8_t buff[(ETH_RX_BUFFER_SIZE + 31) & ~31] __ALIGNED(32);
+  struct pbuf_custom pbuf_custom;
+  uint8_t buff[(ETH_RX_BUFFER_SIZE + 31) & ~31] __ALIGNED(32);
 } RxBuff_t;
 
 /* Memory Pool Declaration */
@@ -121,7 +121,7 @@ __attribute__((at(0x30000100))) ETH_DMADescTypeDef  DMATxDscrTab[ETH_TX_DESC_CNT
 #elif defined ( __GNUC__ ) /* GNU Compiler */
 
 ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
-ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection"))); /* Ethernet Tx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));   /* Ethernet Tx DMA Descriptors */
 
 #endif
 
@@ -298,11 +298,11 @@ static void low_level_init(struct netif *netif)
 
   /* Accept broadcast address and ARP traffic */
   /* don't set NETIF_FLAG_ETHARP if this device is not an ethernet one */
-#if LWIP_ARP
+  #if LWIP_ARP
     netif->flags |= NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP;
-#else
+  #else
     netif->flags |= NETIF_FLAG_BROADCAST;
-#endif /* LWIP_ARP */
+  #endif /* LWIP_ARP */
 
   /* create a binary semaphore used for informing ethernetif of frame reception */
   RxPktSemaphore = osSemaphoreNew(1, 0, NULL);
@@ -371,8 +371,8 @@ static void low_level_init(struct netif *netif)
 
     /* Get MAC Config MAC */
     HAL_ETH_GetMACConfig(&heth, &MACConf);
-	    MACConf.DuplexMode = ETH_FULLDUPLEX_MODE;
-	    MACConf.Speed = ETH_SPEED_100M;
+    MACConf.DuplexMode = duplex;
+    MACConf.Speed = speed;
     HAL_ETH_SetMACConfig(&heth, &MACConf);
 
     HAL_ETH_Start_IT(&heth);
@@ -881,8 +881,8 @@ void ethernet_link_thread(void* argument)
     {
       /* Get MAC Config MAC */
       HAL_ETH_GetMACConfig(&heth, &MACConf);
-	    MACConf.DuplexMode = ETH_FULLDUPLEX_MODE;
-	    MACConf.Speed = ETH_SPEED_100M;
+      MACConf.DuplexMode = duplex;
+      MACConf.Speed = speed;
       HAL_ETH_SetMACConfig(&heth, &MACConf);
       HAL_ETH_Start_IT(&heth);
       netif_set_up(netif);

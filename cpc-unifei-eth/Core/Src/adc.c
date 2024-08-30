@@ -91,30 +91,11 @@ void MX_ADC3_Init(void)
 void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 {
 
-  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
   if(adcHandle->Instance==ADC3)
   {
   /* USER CODE BEGIN ADC3_MspInit 0 */
 
   /* USER CODE END ADC3_MspInit 0 */
-
-  /** Initializes the peripherals clock
-  */
-    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-    PeriphClkInitStruct.PLL2.PLL2M = 5;
-    PeriphClkInitStruct.PLL2.PLL2N = 64;
-    PeriphClkInitStruct.PLL2.PLL2P = 10;
-    PeriphClkInitStruct.PLL2.PLL2Q = 2;
-    PeriphClkInitStruct.PLL2.PLL2R = 2;
-    PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_2;
-    PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
-    PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
-    PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
     /* ADC3 clock enable */
     __HAL_RCC_ADC3_CLK_ENABLE();
   /* USER CODE BEGIN ADC3_MspInit 1 */
