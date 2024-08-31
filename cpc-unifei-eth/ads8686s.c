@@ -175,8 +175,8 @@ static int32_t ads8686s_read_channels(struct ads8686s_device *dev,
 	for (uint32_t i = 0; i < dev->layers_nb; i++, memset(tmp, 0x0, 2))
 	{
 		HAL_SPI_Receive(&hspi1, (uint8_t *)&tmp, 4, 100);
-		tmp[0] = get_unaligned_be16((void *)&tmp[0]);
-		tmp[1] = get_unaligned_be16((void *)&tmp[1]);
+//		tmp[0] = get_unaligned_be16((void *)&tmp[0]);
+//		tmp[1] = get_unaligned_be16((void *)&tmp[1]);
 		res[i].channel_a = tmp[0];
 		res[i].channel_b = tmp[1];
 	}
@@ -221,19 +221,18 @@ int32_t ads8686s_read_data_serial(struct ads8686s_device *dev,
 /* Initialize the device. */
 int32_t ads8686s_init(struct ads8686s_device *dev, struct ads8686s_init_param *init_param)
 {
-	uint8_t i;
+	uint8_t ch;
 	
 	ads8686s_reset(dev);
 	
-	for (i = 0; i <= ADS8686S_VA7; i++) {
-		dev->va[i] = ADS8686S_10V;
-		dev->vb[i] = ADS8686S_10V;
+	for (ch = ADS8686S_VA0; ch <= ADS8686S_VA7; ch++)
+	{
+		ads8686s_set_range(dev, ch, ADS8686S_10V);
 	}
-	
-//	for (i = 0; i <= ADS8686S_VA7; i++) {
-//		dev->va[i] = init_param->va[i] ? init_param->va[i] : ADS8686S_10V;
-//		dev->vb[i] = init_param->vb[i] ? init_param->vb[i] : ADS8686S_10V;
-//	}
+	for (ch = ADS8686S_VB0; ch <= ADS8686S_VB7; ch++)
+	{
+		ads8686s_set_range(dev, ch, ADS8686S_10V);
+	}
 	
 	ads8686s_set_oversampling_ratio(dev, init_param->osr);
 	
