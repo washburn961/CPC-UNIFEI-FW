@@ -117,11 +117,20 @@ enum ads8686s_osr {
 	ADS8686S_OSR_128,
 };
 
+extern struct ads8686s_device dev;
+
 struct ads8686s_device
 {
-	enum ads8686s_range range_a;
-	enum ads8686s_range range_b;
+	enum ads8686s_range va[8];
+	enum ads8686s_range vb[8];
 	enum ads8686s_osr osr;
+	uint8_t layers_nb;
+};
+
+struct ads8686s_init_param {
+	enum ads8686s_range		va[8];
+	enum ads8686s_range		vb[8];
+	enum ads8686s_osr		osr;
 };
 
 struct ads8686s_conversion_result {
@@ -162,7 +171,7 @@ int32_t ads8686s_read_data_serial(struct ads8686s_device *dev,
 	struct ads8686s_conversion_result *results,
 	uint32_t samples);
 /* Initialize the device. */
-int32_t ads8686s_setup(struct ads8686s_device *device);
+int32_t ads8686s_init(struct ads8686s_device *device, struct ads8686s_init_param *init_param);
 /* Read conversion results. */
 int32_t ads8686s_read_channel_source(struct ads8686s_device *dev,
 	enum ads8686s_channel *ch_a,

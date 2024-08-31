@@ -2,6 +2,7 @@
 #include "udp.h"
 #include <string.h>
 #include "lwip/apps/lwiperf.h"
+#include "command_system.h"
 
 struct udp_pcb *udp_pcb_server;
 
@@ -14,7 +15,7 @@ void udp_receive_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const 
 		// Send a response back to the sender (optional)
 		strncpy(buffer, p->payload, p->len);
 		buffer[p->len] = '\0'; // Ensure null termination
-//		execute_command(buffer, p->len);
+		execute_command(buffer, p->len);
 		
 //		struct pbuf *reply = pbuf_alloc(PBUF_TRANSPORT, p->len, PBUF_RAM);
 //		if (reply != NULL)

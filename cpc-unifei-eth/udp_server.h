@@ -1,6 +1,8 @@
 #pragma once
 
 #define IPV4_ADDR(a, b, c, d) ((ipv4){.byte0 = (a), .byte1 = (b), .byte2 = (c), .byte3 = (d)})
+#define DEFAULT_IPV4_ADDR IPV4_ADDR(192, 168, 1, 11)
+#define DEFAULT_PORT 80
 
 #include <stdint.h>
 

@@ -52,7 +52,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-struct ads8686s_device dev;
+
 uint16_t ret = 0;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -141,7 +141,9 @@ void MX_FREERTOS_Init(void) {
   * @param  argument: Not used
   * @retval None
   */
-
+struct ads8686s_init_param ads8686s_init_param = {
+	.osr = ADS8686S_OSR_128
+};
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
@@ -158,14 +160,7 @@ void StartDefaultTask(void *argument)
      */
 	udp_server_init();
 	
-	ads8686s_setup(&dev);
-	ads8686s_read(&dev, 0x2, &ret);
-	ads8686s_read(&dev, 0x3, &ret);
-	ads8686s_read(&dev, 0x4, &ret);
-	ads8686s_read(&dev, 0x5, &ret);
-	ads8686s_read(&dev, 0x6, &ret);
-	ads8686s_read(&dev, 0x7, &ret);
-	ads8686s_read(&dev, 0x8, &ret);
+	ads8686s_init(&dev, &ads8686s_init_param);
 
 	/* Infinite loop */
 	for (;;)
@@ -194,7 +189,7 @@ void SendTemperatureUDP(float temperature)
 	snprintf(message, sizeof(message), "Temperature: %.2f Celsius", temperature);
 
 	// Allocate a pbuf for the message
-	udp_server_send(IPV4_ADDR(192, 168, 1, 11), 80, message, sizeof(message));
+	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, message, sizeof(message));
 }
 
 uint32_t temp_counts = 0;

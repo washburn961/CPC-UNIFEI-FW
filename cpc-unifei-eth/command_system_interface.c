@@ -1,6 +1,8 @@
 #include "command_system_interface.h"
 #include "main.h"
-#include "udp.h"
+#include "udp_server.h"
+#include "ads8686s.h"
+#include "stdio.h"
 
 // Example function implementations for GPIO
 void write_OUT1_B(int value) {
@@ -83,6 +85,34 @@ int read_OUT4_A(void) {
 	return 0;
 }
 
+uint8_t adc_register_value = 0x2;
+
+void write_ADC_SET(int value) {
+	adc_register_value = (uint8_t)value;
+}
+
+int read_ADC_SET(void) {
+	char message[50];
+	int message_length = snprintf(message, sizeof(message), "ADC_SET=%u", adc_register_value);
+	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, message, sizeof(message));
+	
+	return 0;
+}
+
+void write_ADC(int value) {
+	ads8686s_write(&dev, adc_register_value, (uint16_t)value);
+}
+
+int read_ADC(void) {
+	char message[50];
+	uint16_t ret = 0;
+	ads8686s_read(&dev, adc_register_value, &ret);
+	int message_length = snprintf(message, sizeof(message), "ADC_REG=%u", ret);
+	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, message, sizeof(message));
+	
+	return 0;
+}
+
 // Array mapping virtual addresses to corresponding functions
 VirtualAddress address_map[] = {
 	{ "OUT1_B", write_OUT1_B, read_OUT1_B },
@@ -93,6 +123,8 @@ VirtualAddress address_map[] = {
 	{ "OUT2_A", write_OUT2_A, read_OUT2_A },
 	{ "OUT3_A", write_OUT3_A, read_OUT3_A },
 	{ "OUT4_A", write_OUT4_A, read_OUT4_A },
+	{ "ADC_SET", write_ADC_SET, read_ADC_SET },
+	{ "ADC_REG", write_ADC, read_ADC },
 	// You can add even more mappings here if needed
 };
 
