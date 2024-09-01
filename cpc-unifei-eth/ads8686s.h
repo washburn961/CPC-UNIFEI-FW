@@ -125,6 +125,9 @@ struct ads8686s_device
 	enum ads8686s_range vb[8];
 	enum ads8686s_osr osr;
 	uint8_t layers_nb;
+	uint8_t burst;
+	uint8_t init_ok;
+	float lsb;
 };
 
 struct ads8686s_init_param {
@@ -136,6 +139,11 @@ struct ads8686s_init_param {
 struct ads8686s_conversion_result {
 	uint16_t channel_a;
 	uint16_t channel_b;
+};
+
+struct ads8686s_sequencer_layer {
+	enum ads8686s_channel ch_a;
+	enum ads8686s_channel ch_b;
 };
 
 /******************************************************************************/
@@ -179,5 +187,10 @@ int32_t ads8686s_read_channel_source(struct ads8686s_device *dev,
 /* Select the input source for a channel. */
 int32_t ads8686s_select_channel_source(struct ads8686s_device *dev,
 	enum ads8686s_channel ch);
+
+int32_t ads8686s_setup_sequencer(struct ads8686s_device *dev,
+	struct ads8686s_sequencer_layer *layers,
+	uint32_t layers_nb,
+	uint8_t burst);
 
 int32_t ads8686s_self_test(struct ads8686s_device *dev);

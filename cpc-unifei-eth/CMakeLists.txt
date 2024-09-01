@@ -18,6 +18,10 @@ add_bsp_based_executable(
 		${BSP_ROOT}/command_system_interface.h
 		${BSP_ROOT}/command_system_interface.c
 		${BSP_ROOT}/udp_server.h
-		${BSP_ROOT}/udp_server.c)
+		${BSP_ROOT}/udp_server.c
+		${BSP_ROOT}/application.c
+		${BSP_ROOT}/application.h
+		${BSP_ROOT}/ads8686s_low_level.h
+		${BSP_ROOT}/ads8686s_low_level.c)
 
 add_subdirectory(../phasor-estimation-filters/phasorfilters phasorfilters)

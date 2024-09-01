@@ -9,24 +9,24 @@
       <Syscalls />
       <CXXCatchpoints />
     </CatchpointConfiguration>
-    <VisualWatchPreferences />
+    <VisualWatches />
+    <VisualWatchPreferences>
+      <DefaultProvider>com.sysprogs.imagewatch</DefaultProvider>
+      <ProviderPreferences>
+        <VisualWatchProviderPreferences>
+          <ProviderID>com.sysprogs.imagewatch</ProviderID>
+          <Preferences>
+            <ViewMode>ZoomedOut</ViewMode>
+            <Defaults />
+          </Preferences>
+        </VisualWatchProviderPreferences>
+      </ProviderPreferences>
+    </VisualWatchPreferences>
     <MaskInterruptsWhileStepping>false</MaskInterruptsWhileStepping>
     <MemoryWindowPreferences />
     <b>
       <p5>
-        <g>temp</g>
-        <b>com.sysprogs.types.builtin.Float32</b>
-        <a>true</a>
-        <h>
-          <ComparisonMode>Equals</ComparisonMode>
-          <Enabled>false</Enabled>
-        </h>
-        <e>false</e>
-        <f>false</f>
-        <d>false</d>
-      </p5>
-      <p5>
-        <g>rx</g>
+        <g>voltages</g>
         <a>true</a>
         <h>
           <ComparisonMode>Equals</ComparisonMode>

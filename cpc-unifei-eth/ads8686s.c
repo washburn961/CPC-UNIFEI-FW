@@ -1,15 +1,16 @@
 #include "ads8686s.h"
 #include "spi.h"
 #include "string.h"
+#include "stm32h7xx_hal.h"
 
 struct ads8686s_device dev;
 
 static int32_t ads8686s_toggle_conv(void)
 {
-//	HAL_GPIO_WritePin(ADC_CONVST_GPIO_Port, ADC_CONVST_Pin, GPIO_PIN_SET);
-//	HAL_GPIO_WritePin(ADC_CONVST_GPIO_Port, ADC_CONVST_Pin, GPIO_PIN_RESET);
+	//	HAL_GPIO_WritePin(ADC_CONVST_GPIO_Port, ADC_CONVST_Pin, GPIO_PIN_SET);
+	//	HAL_GPIO_WritePin(ADC_CONVST_GPIO_Port, ADC_CONVST_Pin, GPIO_PIN_RESET);
 	
-	    // Set the CONVST pin (GPIOA Pin 3)
+		    // Set the CONVST pin (GPIOA Pin 3)
 	GPIOD->BSRR = GPIO_PIN_12; // This sets the pin high
     
 	// Reset the CONVST pin (GPIOA Pin 3)
@@ -171,26 +172,40 @@ static int32_t ads8686s_read_channels(struct ads8686s_device *dev,
 	int32_t ret;
 	uint32_t read_nb = dev->layers_nb * 2;
 	uint16_t tmp[2] = { 0 };
+	uint16_t tmp_burst[16] = { 0 };
+	uint16_t tx[16] = { 0 };
+	
+	if (dev->burst)
+	{
+		HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)&tx, (uint8_t *)&tmp_burst, 32, 100);
+		for (uint32_t i = 0; i < dev->layers_nb; i++)
+		{
+			res[i].channel_a = get_unaligned_be16((void *)&tmp_burst[i * 2]);
+			res[i].channel_b = get_unaligned_be16((void *)&tmp_burst[i * 2 + 1]);
+		}
+		
+		return 0;
+	}
 	
 	for (uint32_t i = 0; i < dev->layers_nb; i++, memset(tmp, 0x0, 2))
 	{
 		HAL_SPI_Receive(&hspi1, (uint8_t *)&tmp, 4, 100);
-//		tmp[0] = get_unaligned_be16((void *)&tmp[0]);
-//		tmp[1] = get_unaligned_be16((void *)&tmp[1]);
+		tmp[0] = get_unaligned_be16((void *)&tmp[0]);
+		tmp[1] = get_unaligned_be16((void *)&tmp[1]);
 		res[i].channel_a = tmp[0];
 		res[i].channel_b = tmp[1];
 	}
 
-//	for (uint32_t i = 0; i < read_nb; i++, tmp = 0) {
-//		ret = HAL_SPI_Receive(&hspi1, (uint8_t *)&tmp, 2, 100);
-//
-//		tmp = get_unaligned_be16((void *)&tmp);
-//
-//		if (i % 2 == 0)
-//			res[i / 2].channel_a = tmp;
-//		else
-//			res[i / 2].channel_b = tmp;
-//	}
+	//	for (uint32_t i = 0; i < read_nb; i++, tmp = 0) {
+	//		ret = HAL_SPI_Receive(&hspi1, (uint8_t *)&tmp, 2, 100);
+	//
+	//		tmp = get_unaligned_be16((void *)&tmp);
+	//
+	//		if (i % 2 == 0)
+	//			res[i / 2].channel_a = tmp;
+	//		else
+	//			res[i / 2].channel_b = tmp;
+	//	}
 
 	return 0;
 }
@@ -234,11 +249,24 @@ int32_t ads8686s_init(struct ads8686s_device *dev, struct ads8686s_init_param *i
 		ads8686s_set_range(dev, ch, ADS8686S_10V);
 	}
 	
+	dev->lsb = 20.0f / powf(2, 16);
+	
 	ads8686s_set_oversampling_ratio(dev, init_param->osr);
 	
 	dev->layers_nb = 1;
 	
-	ads8686s_self_test(dev);
+	if (ads8686s_self_test(dev) != 0)
+	{
+		return -1;
+	}
+	
+	dev->init_ok = 1;
+	
+//	struct ads8686s_conversion_result results[8] = { 0 };
+//	
+//	ads8686s_toggle_conv();
+//	
+//	ads8686s_read_channels(dev, results);
 	
 	return 0;
 }
@@ -287,5 +315,54 @@ int32_t ads8686s_self_test(struct ads8686s_device *dev)
 	ads8686s_select_channel_source(dev, ch_save[0]);
 	ads8686s_select_channel_source(dev, ch_save[1]);
 	
+	if (result.channel_a != 0xAAAA || result.channel_b != 0x5555)
+	{
+		ret = -1;
+	}
+	
 	return ret;
+}
+
+int32_t ads8686s_setup_sequencer(struct ads8686s_device *dev,
+	struct ads8686s_sequencer_layer *layers,
+	uint32_t layers_nb,
+	uint8_t burst)
+{
+	int ret;
+	for (uint32_t i = 0; i < layers_nb; i++) {
+		uint16_t data = 0;
+
+		// Last one ?
+		if (i == layers_nb - 1)
+			data |= ADS8686S_SSREN;
+		data |= (layers[i].ch_b - ADS8686S_VB0) << 4;
+		data |= layers[i].ch_a;
+
+		ret = ads8686s_write(dev, ADS8686S_REG_SEQUENCER_STACK(i), data);
+		if (ret != 0)
+			return ret;
+	}
+
+	if (burst) {
+		ret = ads8686s_write_mask(dev,
+			ADS8686S_REG_CONFIG,
+			ADS8686S_BURSTEN_MASK,
+			ADS8686S_BURSTEN(1));
+		if (ret != 0)
+			return ret;
+		dev->burst = 1;
+	}
+
+	// Enable channel sequencer
+	ret = ads8686s_write_mask(dev,
+		ADS8686S_REG_CONFIG,
+		ADS8686S_SEQEN_MASK,
+		ADS8686S_SEQEN(1));
+	if (ret != 0)
+		return ret;
+
+	dev->layers_nb = layers_nb;
+
+	// Dummy CONV pulse as asked in datasheet
+	return ads8686s_toggle_conv();
 }

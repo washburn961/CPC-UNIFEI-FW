@@ -28,11 +28,8 @@
 /* ETH_CODE: add lwiperf, see comment in StartDefaultTask function */
 #include "lwip.h"
 #include "udp_server.h"
-#include "adc.h"
 #include <string.h>
-#include "octospi.h"
-#include "ads8686s.h"
-#include "command_system.h"
+#include "application.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,7 +50,6 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 
-uint16_t ret = 0;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -65,14 +61,7 @@ const osThreadAttr_t defaultTask_attributes = {
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-osThreadId_t temperatureTaskHandle;
-const osThreadAttr_t temperatureTask_attributes = {
-	.name = "temperatureTask",
-	.stack_size = 512 * 4,
-	.priority = (osPriority_t) osPriorityNormal,
-};
 
-void TemperatureTask(void *argument);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -103,6 +92,7 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
+	application_init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -126,7 +116,7 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-	defaultTaskHandle = osThreadNew(TemperatureTask, NULL, &temperatureTask_attributes);
+	
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -141,9 +131,6 @@ void MX_FREERTOS_Init(void) {
   * @param  argument: Not used
   * @retval None
   */
-struct ads8686s_init_param ads8686s_init_param = {
-	.osr = ADS8686S_OSR_128
-};
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
@@ -159,60 +146,40 @@ void StartDefaultTask(void *argument)
      * 'lwip/apps/lwiperf.h'
      */
 	udp_server_init();
-	
-	ads8686s_init(&dev, &ads8686s_init_param);
 
 	/* Infinite loop */
 	for (;;)
 	{
-		HAL_GPIO_TogglePin(USER_LED0_GPIO_Port, USER_LED0_Pin);
-		osDelay(250);
-		HAL_GPIO_TogglePin(USER_LED0_GPIO_Port, USER_LED0_Pin);
-		HAL_GPIO_TogglePin(USER_LED1_GPIO_Port, USER_LED1_Pin);
-		osDelay(250);
-		HAL_GPIO_TogglePin(USER_LED1_GPIO_Port, USER_LED1_Pin);
+
 	}
   /* USER CODE END StartDefaultTask */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-/* Function to send the temperature over UDP */
-void SendTemperatureUDP(float temperature)
-{
-	char message[50];
-	struct pbuf *p;
-	ip_addr_t dest_ip;
-	IP4_ADDR(&dest_ip, 192, 168, 1, 11);
-
-	// Format the temperature as a string with "Celsius"
-	snprintf(message, sizeof(message), "Temperature: %.2f Celsius", temperature);
-
-	// Allocate a pbuf for the message
-	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, message, sizeof(message));
-}
-
-uint32_t temp_counts = 0;
-float temp = 0;
-uint16_t *TS_CAL1 = (uint16_t *)0x1FF1E820;
-uint16_t *TS_CAL2 = (uint16_t *)0x1FF1E840;
-	
-void TemperatureTask(void *argument)
-{
-	HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
-	
-	for (;;)
-	{
-		HAL_ADC_Start(&hadc3);
-		HAL_ADC_PollForConversion(&hadc3, 100);
-		temp = ((double)(80.0)) / ((double)(*TS_CAL2 - *TS_CAL1)) * (((double)(HAL_ADC_GetValue(&hadc3))) - ((double)*TS_CAL1)) + ((double)30.0);
-		HAL_ADC_Stop(&hadc3);
-		
-		// Send the temperature over UDP
-		SendTemperatureUDP(temp);
-		
-		osDelay(500);
-	}
-}
+///* Function to send the temperature over UDP */
+//
+//uint32_t temp_counts = 0;
+//float temp = 0;
+//uint16_t *TS_CAL1 = (uint16_t *)0x1FF1E820;
+//uint16_t *TS_CAL2 = (uint16_t *)0x1FF1E840;
+//	
+//void TemperatureTask(void *argument)
+//{
+//	HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+//	
+//	for (;;)
+//	{
+//		HAL_ADC_Start(&hadc3);
+//		HAL_ADC_PollForConversion(&hadc3, 100);
+//		temp = ((double)(80.0)) / ((double)(*TS_CAL2 - *TS_CAL1)) * (((double)(HAL_ADC_GetValue(&hadc3))) - ((double)*TS_CAL1)) + ((double)30.0);
+//		HAL_ADC_Stop(&hadc3);
+//		
+//		// Send the temperature over UDP
+//		SendTemperatureUDP(temp);
+//		
+//		osDelay(500);
+//	}
+//}
 /* USER CODE END Application */
 
