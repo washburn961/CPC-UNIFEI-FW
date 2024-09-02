@@ -178,6 +178,7 @@ int32_t ads8686s_set_oversampling_ratio(struct ads8686s_device *dev,
 int32_t ads8686s_read_data_serial(struct ads8686s_device *dev,
 	struct ads8686s_conversion_result *results,
 	uint32_t samples);
+int32_t ads8686s_read_channels(struct ads8686s_device *dev, struct ads8686s_conversion_result *res);
 /* Initialize the device. */
 int32_t ads8686s_init(struct ads8686s_device *device, struct ads8686s_init_param *init_param);
 /* Read conversion results. */

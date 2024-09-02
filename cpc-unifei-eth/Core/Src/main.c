@@ -229,7 +229,18 @@ void PeriphCommonClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
+{
+	
+}
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (application_analog_busy_semaphore_can_release(GPIO_Pin)) // Replace BUSY_Pin with the actual pin number for your BUSY signal
+	{
+		application_analog_busy_semaphore_release();
+	}
+}
 /* USER CODE END 4 */
 
  /* MPU Configuration */

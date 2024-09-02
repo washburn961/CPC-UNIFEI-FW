@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define PROCESSING_TIMING_Pin GPIO_PIN_4
+#define PROCESSING_TIMING_GPIO_Port GPIOE
 #define RMII_MDC_Pin GPIO_PIN_1
 #define RMII_MDC_GPIO_Port GPIOC
 #define RMII_REF_CLK_Pin GPIO_PIN_1
@@ -108,6 +110,8 @@ void Error_Handler(void);
 #define OUT2_B_OUT_GPIO_Port GPIOG
 #define OUT4_B_OUT_Pin GPIO_PIN_10
 #define OUT4_B_OUT_GPIO_Port GPIOG
+#define ANALOG_TIMING_Pin GPIO_PIN_8
+#define ANALOG_TIMING_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -166,8 +166,7 @@ static inline uint16_t get_unaligned_be16(const void *p)
 	return (uint16_t)bytes[0] << 8 | (uint16_t)bytes[1];
 }
 
-static int32_t ads8686s_read_channels(struct ads8686s_device *dev,
-	struct ads8686s_conversion_result *res)
+ int32_t ads8686s_read_channels(struct ads8686s_device *dev, struct ads8686s_conversion_result *res)
 {
 	int32_t ret;
 	uint32_t read_nb = dev->layers_nb * 2;
