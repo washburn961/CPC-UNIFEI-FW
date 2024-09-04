@@ -16,6 +16,7 @@
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
 void ProcessingTask(void *argument);
+char* FormatVoltagesToString(struct ads8686s_conversion_voltage voltages[]);
 
 osSemaphoreId_t analogTaskMainSemaphore;
 osSemaphoreId_t analogTaskConversionSemaphore;
@@ -97,7 +98,8 @@ static void My_SPI_Init(void)
 }
 
 uint8_t cango = 0;
-
+struct ads8686s_conversion_voltage *voltages = { 0 };
+char voltageString[512] = { 0 };
 
 void AnalogTask(void *argument)
 {
@@ -141,40 +143,52 @@ void AnalogTask(void *argument)
 	
 	cango = 1;
 	
+	// Start the first conversion before entering the loop
+	GPIOD->BSRR = GPIO_PIN_12;
+	GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
+	
 	while (true)
 	{
-		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever); // Wait for the signal
-		
-		// Set the CONVST pin
-		GPIOD->BSRR = GPIO_PIN_12;
-    
-		// Reset the CONVST pin
-		GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
-		
-		osThreadFlagsWait(0x0002, osFlagsWaitAny, osWaitForever); // Wait for conversion complete signal
+		// Wait for the conversion complete signal (set by GPIO ISR)
+		osThreadFlagsWait(0x0002, osFlagsWaitAny, osWaitForever);
 		
 		HAL_GPIO_WritePin(ANALOG_TIMING_GPIO_Port, ANALOG_TIMING_Pin, GPIO_PIN_SET);
 		
+		// Read conversion results
 		ads8686s_read_channels(&ads8686s, conversion_buffer);
 		
-//		// Swap buffers and release the processing task semaphore
-//		struct ads8686s_conversion_result *temp = currentBuffer;
-//		currentBuffer = processingBuffer;
-//		processingBuffer = temp;
-
-//		osThreadFlagsSet(processingTaskHandle, 0x0001); // Signal the processing task
+		// Pulse GPIO to start the next conversion
+		GPIOD->BSRR = GPIO_PIN_12;
+		GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
 		
+		// Process the data
+		for (uint8_t i = 0; i < 8; i++)
+		{
+			voltages[i].channel_a = (int16_t)conversion_buffer[i].channel_a * ads8686s.lsb;
+			voltages[i].channel_b = (int16_t)conversion_buffer[i].channel_b * ads8686s.lsb;
+		}
+		
+		// Example: Actuate based on processed data
+		if (voltages[0].channel_a > 3.0f)
+		{
+			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_RESET);
+		}
+		
+		// Send the processed data over UDP
+		char* voltageString = FormatVoltagesToString(voltages);
+		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, voltageString, strlen(voltageString));
+
 		HAL_GPIO_WritePin(ANALOG_TIMING_GPIO_Port, ANALOG_TIMING_Pin, GPIO_PIN_RESET);
+		
+		// Wait for the timer interrupt to control the sampling rate
+		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 	}
 }
 
-struct ads8686s_conversion_voltage {
-	float channel_a;
-	float channel_b;
-};
-
-struct ads8686s_conversion_voltage *voltages = { 0 };
-char voltageString[512] = { 0 };
 
 char* FormatVoltagesToString(struct ads8686s_conversion_voltage voltages[]) {
 	// Start with an empty string
