@@ -23,5 +23,3 @@ add_bsp_based_executable(
 		${BSP_ROOT}/application.h
 		${BSP_ROOT}/ads8686s_low_level.h
 		${BSP_ROOT}/ads8686s_low_level.c)
-
-add_subdirectory(../phasor-estimation-filters/phasorfilters phasorfilters)
