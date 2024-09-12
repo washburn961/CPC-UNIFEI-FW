@@ -1,4 +1,13 @@
+#define SAMPLING_RATE_CONTROL_FLAG 0x0001
+#define ADC_BUSY_FLAG 0x0002
+#define CHANNEL_COUNT 16
+#define SAMPLE_COUNT 16
+
 #include "application.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "spi.h"
@@ -8,36 +17,10 @@
 #include "ads8686s.h"
 #include "udp_server.h"
 #include "gpio.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
-
-// Minimal definition of struct timeval for embedded use
-struct timeval {
-	long tv_sec; // seconds
-	long tv_usec; // microseconds
-};
-
-// The _gettimeofday function
-int _gettimeofday(struct timeval *tv, void *tzvp)
-{
-	if (tv) {
-		tv->tv_sec = 0; // Set seconds to zero (or other value if needed)
-		tv->tv_usec = 0; // Set microseconds to zero
-	}
-	return 0;  // Return 0 to indicate success
-}
-
-
-
-lua_State *Lua;
 
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
+void serialize_voltages(struct ads8686s_conversion_voltage *voltages, uint8_t* out_serialized, uint8_t size);
 
 osSemaphoreId_t analogTaskMainSemaphore;
 osSemaphoreId_t analogTaskConversionSemaphore;
@@ -53,17 +36,16 @@ const osThreadAttr_t blinkTask_attributes = {
 	.stack_size = 512 * 4,
 	.priority = (osPriority_t) osPriorityNormal,
 };
-
 struct ads8686s_device ads8686s;
 struct ads8686s_init_param ads8686s_init_param = {
 	.osr = ADS8686S_OSR_128
 };
+struct ads8686s_conversion_result conversion_buffer[CHANNEL_COUNT / 2];
+struct ads8686s_conversion_voltage voltage_buffer[CHANNEL_COUNT / 2] = { 0 };
+uint8_t serialized_voltages_tmp[CHANNEL_COUNT * sizeof(float)] = { 0 };
 
 uint32_t application_init(void)
 {
-	Lua = luaL_newstate(); // Create a new Lua state with a custom allocator
-	luaL_openlibs(Lua); // Load Lua standard libraries (this includes os and io)
-	
 	analogTaskHandle = osThreadNew(AnalogTask, NULL, &analogTask_attributes);
 	blinkTaskHandle = osThreadNew(BlinkTask, NULL, &blinkTask_attributes);
 	
@@ -72,42 +54,6 @@ uint32_t application_init(void)
 	
 	return 0;
 }
-
-struct ads8686s_conversion_result conversion_buffer[8];
-
-static void SPI_HighFrequency_Init(void)
-{
-	HAL_SPI_Abort(&hspi1);
-	HAL_SPI_DeInit(&hspi1);
-	hspi1.Instance = SPI1;
-	hspi1.Init.Mode = SPI_MODE_MASTER;
-	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-	hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-	hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
-	hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-	hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-	hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
-	hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-	hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-	hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-	hspi1.Init.CRCPolynomial = 0x0;
-	hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
-	hspi1.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
-	hspi1.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
-	hspi1.Init.TxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-	hspi1.Init.RxCRCInitializationPattern = SPI_CRC_INITIALIZATION_ALL_ZERO_PATTERN;
-	hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_01CYCLE;
-	hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
-	hspi1.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
-	hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
-	hspi1.Init.IOSwap = SPI_IO_SWAP_DISABLE;
-	if (HAL_SPI_Init(&hspi1) != HAL_OK)
-	{
-		Error_Handler();
-	}
-}
-
-struct ads8686s_conversion_voltage voltages[8] = { 0 };
 
 void AnalogTask(void *argument)
 {
@@ -140,14 +86,12 @@ void AnalogTask(void *argument)
 	
 		ads8686s_setup_sequencer(&ads8686s, layers, 8, 1);
 		
-		SPI_HighFrequency_Init();
+		SPI1_HighFrequency_Init();
 	}
 	else
 	{
 		HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_SET);
 	}
-	
-//	ring_buffer_init(&buffer);
 	
 	HAL_TIM_Base_Start_IT(&htim2);
 	
@@ -158,7 +102,7 @@ void AnalogTask(void *argument)
 	while (true)
 	{
 		// Wait for the conversion complete signal (set by GPIO ISR)
-		osThreadFlagsWait(0x0002, osFlagsWaitAny, osWaitForever);
+		osThreadFlagsWait(ADC_BUSY_FLAG, osFlagsWaitAny, osWaitForever);
 		
 		// Read conversion results
 		ads8686s_read_channels(&ads8686s, conversion_buffer);
@@ -170,12 +114,15 @@ void AnalogTask(void *argument)
 		// Process the data
 		for (uint8_t i = 0; i < 8; i++)
 		{
-			voltages[i].channel_a = (int16_t)conversion_buffer[i].channel_a * ads8686s.lsb;
-			voltages[i].channel_b = (int16_t)conversion_buffer[i].channel_b * ads8686s.lsb;
+			voltage_buffer[i].channel_a = (int16_t)conversion_buffer[i].channel_a * ads8686s.lsb;
+			voltage_buffer[i].channel_b = (int16_t)conversion_buffer[i].channel_b * ads8686s.lsb;
 		}
 		
+		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT);
+		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, serialized_voltages_tmp, sizeof(serialized_voltages_tmp));
+		
 		// Wait for the timer interrupt to control the sampling rate
-		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
+		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
 	}
 }
 
@@ -199,15 +146,27 @@ void BlinkTask(void *argument)
 // ISR or other function where the analog conversion is complete
 void application_analog_semaphore_release(void)
 {
-	osThreadFlagsSet(analogTaskHandle, 0x0001); // Signal to start conversion
+	osThreadFlagsSet(analogTaskHandle, SAMPLING_RATE_CONTROL_FLAG); // Signal to start conversion
 }
 
 void application_analog_busy_semaphore_release(void)
 {
-	osThreadFlagsSet(analogTaskHandle, 0x0002); // Signal conversion complete
+	osThreadFlagsSet(analogTaskHandle, ADC_BUSY_FLAG); // Signal conversion complete
 }
 
 uint32_t application_analog_busy_semaphore_can_release(uint16_t GPIO_Pin)
 {
 	return GPIO_Pin == ADC_BUSY_Pin && ads8686s.init_ok == 1 && (GPIOD->IDR & GPIO_PIN_11) == 0;
+}
+
+void serialize_voltages(struct ads8686s_conversion_voltage *voltages, uint8_t* out_serialized, uint8_t size)
+{
+	// Calculate the size of each struct in bytes
+	size_t struct_size = sizeof(struct ads8686s_conversion_voltage);
+
+	// Loop through the array of voltages
+	for (uint8_t i = 0; i < size; i++) {
+		// Serialize the current struct to the byte array
+		memcpy(out_serialized + i * struct_size, &voltages[i], struct_size);
+	}
 }

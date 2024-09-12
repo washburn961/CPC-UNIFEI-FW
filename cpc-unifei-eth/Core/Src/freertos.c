@@ -54,9 +54,9 @@
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+	.name = "defaultTask",
+	.stack_size = 512 * 4,
+	.priority = (osPriority_t) osPriorityNormal,
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,12 +75,12 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
 /* USER CODE BEGIN 4 */
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
 {
-   /* Run time stack overflow checking is performed if
-   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
-   called if a stack overflow is detected. */
-	   /* ETH_CODE: add breakpoint when stack oveflow is detected by FreeRTOS.
-	* Useful for debugging issues.
-	*/
+	/* Run time stack overflow checking is performed if
+	configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+	called if a stack overflow is detected. */
+		/* ETH_CODE: add breakpoint when stack oveflow is detected by FreeRTOS.
+	 * Useful for debugging issues.
+	 */
 	__BKPT(0);
 }
 /* USER CODE END 4 */
@@ -91,37 +91,37 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
   * @retval None
   */
 void MX_FREERTOS_Init(void) {
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 	application_init();
-  /* USER CODE END Init */
+	/* USER CODE END Init */
 
-  /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
-  /* USER CODE END RTOS_MUTEX */
+	/* USER CODE BEGIN RTOS_MUTEX */
+	/* add mutexes, ... */
+	/* USER CODE END RTOS_MUTEX */
 
-  /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
-  /* USER CODE END RTOS_SEMAPHORES */
+	/* USER CODE BEGIN RTOS_SEMAPHORES */
+	/* add semaphores, ... */
+	/* USER CODE END RTOS_SEMAPHORES */
 
-  /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  /* USER CODE END RTOS_TIMERS */
+	/* USER CODE BEGIN RTOS_TIMERS */
+	/* start timers, add new ones, ... */
+	/* USER CODE END RTOS_TIMERS */
 
-  /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
+	/* USER CODE BEGIN RTOS_QUEUES */
+	/* add queues, ... */
+	/* USER CODE END RTOS_QUEUES */
 
-  /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+	/* Create the thread(s) */
+	/* creation of defaultTask */
+	defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* USER CODE BEGIN RTOS_THREADS */
+	/* USER CODE BEGIN RTOS_THREADS */
 	
-  /* USER CODE END RTOS_THREADS */
+	/* USER CODE END RTOS_THREADS */
 
-  /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
-  /* USER CODE END RTOS_EVENTS */
+	/* USER CODE BEGIN RTOS_EVENTS */
+	/* add events, ... */
+	/* USER CODE END RTOS_EVENTS */
 
 }
 
@@ -134,17 +134,17 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
-  /* init code for LWIP */
-  MX_LWIP_Init();
-  /* USER CODE BEGIN StartDefaultTask */
-/* ETH_CODE: Adding lwiperf to measure TCP/IP performance.
-     * iperf 2.0.6 (or older?) is required for the tests. Newer iperf2 versions
-     * might work without data check, but they send different headers.
-     * iperf3 is not compatible at all.
-     * Adding lwiperf.c file to the project is necessary.
-     * The default include path should already contain
-     * 'lwip/apps/lwiperf.h'
-     */
+	/* init code for LWIP */
+	MX_LWIP_Init();
+	/* USER CODE BEGIN StartDefaultTask */
+	/* ETH_CODE: Adding lwiperf to measure TCP/IP performance.
+	     * iperf 2.0.6 (or older?) is required for the tests. Newer iperf2 versions
+	     * might work without data check, but they send different headers.
+	     * iperf3 is not compatible at all.
+	     * Adding lwiperf.c file to the project is necessary.
+	     * The default include path should already contain
+	     * 'lwip/apps/lwiperf.h'
+	     */
 	udp_server_init();
 
 	/* Infinite loop */
@@ -152,7 +152,7 @@ void StartDefaultTask(void *argument)
 	{
 
 	}
-  /* USER CODE END StartDefaultTask */
+	/* USER CODE END StartDefaultTask */
 }
 
 /* Private application code --------------------------------------------------*/
