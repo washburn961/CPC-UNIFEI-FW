@@ -12,6 +12,29 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+
+// Minimal definition of struct timeval for embedded use
+struct timeval {
+	long tv_sec; // seconds
+	long tv_usec; // microseconds
+};
+
+// The _gettimeofday function
+int _gettimeofday(struct timeval *tv, void *tzvp)
+{
+	if (tv) {
+		tv->tv_sec = 0; // Set seconds to zero (or other value if needed)
+		tv->tv_usec = 0; // Set microseconds to zero
+	}
+	return 0;  // Return 0 to indicate success
+}
+
+
+
+lua_State *Lua;
 
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
@@ -38,6 +61,9 @@ struct ads8686s_init_param ads8686s_init_param = {
 
 uint32_t application_init(void)
 {
+	Lua = luaL_newstate(); // Create a new Lua state with a custom allocator
+	luaL_openlibs(Lua); // Load Lua standard libraries (this includes os and io)
+	
 	analogTaskHandle = osThreadNew(AnalogTask, NULL, &analogTask_attributes);
 	blinkTaskHandle = osThreadNew(BlinkTask, NULL, &blinkTask_attributes);
 	
