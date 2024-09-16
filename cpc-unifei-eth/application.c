@@ -17,6 +17,8 @@
 #include "ads8686s.h"
 #include "udp_server.h"
 #include "gpio.h"
+#include "fourier_transform.h"
+#include "ring_buffer.h"
 
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
@@ -43,9 +45,36 @@ struct ads8686s_init_param ads8686s_init_param = {
 struct ads8686s_conversion_result conversion_buffer[CHANNEL_COUNT / 2];
 struct ads8686s_conversion_voltage voltage_buffer[CHANNEL_COUNT / 2] = { 0 };
 uint8_t serialized_voltages_tmp[CHANNEL_COUNT * sizeof(float)] = { 0 };
+//ring_buffer ring_buffer_arr;
+//float ring_buffer_content_arr[SAMPLE_COUNT];
+ring_buffer ring_buffer_arr[CHANNEL_COUNT];
+fourier_transform fourier_transform_arr[CHANNEL_COUNT];
+float ring_buffer_content_arr[CHANNEL_COUNT][SAMPLE_COUNT] = { 0 };
+float real_arr[CHANNEL_COUNT][SAMPLE_COUNT] = { 0 };
+float imag_arr[CHANNEL_COUNT][SAMPLE_COUNT] = { 0 };
+float sin_coef[SAMPLE_COUNT * SAMPLE_COUNT] = { 0 };
+float cos_coef[SAMPLE_COUNT * SAMPLE_COUNT] = { 0 };
+float ring_buffer_tmp[SAMPLE_COUNT] = { 0 };
 
 uint32_t application_init(void)
 {
+//	ring_buffer_arr.content = ring_buffer_content_arr;
+//	ring_buffer_arr.size = SAMPLE_COUNT;
+//	ring_buffer_init(&ring_buffer_arr);
+	for (uint8_t i = 0; i < CHANNEL_COUNT; i++)
+	{
+		ring_buffer_arr[i].content = ring_buffer_content_arr[i];
+		ring_buffer_arr[i].size = SAMPLE_COUNT;
+		ring_buffer_init(&ring_buffer_arr[i]);
+		
+		fourier_transform_arr[i].real = real_arr[i];
+		fourier_transform_arr[i].imag = imag_arr[i];
+		fourier_transform_arr[i].sin = sin_coef;
+		fourier_transform_arr[i].cos = cos_coef;
+		fourier_transform_arr[i].size = SAMPLE_COUNT;
+		dft_init(&fourier_transform_arr[i]);
+	}
+	
 	analogTaskHandle = osThreadNew(AnalogTask, NULL, &analogTask_attributes);
 	blinkTaskHandle = osThreadNew(BlinkTask, NULL, &blinkTask_attributes);
 	
@@ -112,13 +141,22 @@ void AnalogTask(void *argument)
 		GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
 		
 		// Process the data
-		for (uint8_t i = 0; i < 8; i++)
+		for (uint8_t i = 0; i < CHANNEL_COUNT / 2; i++)
 		{
 			voltage_buffer[i].channel_a = (int16_t)conversion_buffer[i].channel_a * ads8686s.lsb;
 			voltage_buffer[i].channel_b = (int16_t)conversion_buffer[i].channel_b * ads8686s.lsb;
+			
+			ring_buffer_write(&ring_buffer_arr[i * 2], voltage_buffer[i].channel_a);
+			ring_buffer_write(&ring_buffer_arr[i * 2 + 1], voltage_buffer[i].channel_b);
+			
+			ring_buffer_read_many(&ring_buffer_arr[i * 2], ring_buffer_tmp, SAMPLE_COUNT);
+			dft_step(&fourier_transform_arr[i * 2], ring_buffer_tmp);
+			
+			ring_buffer_read_many(&ring_buffer_arr[i * 2 + 1], ring_buffer_tmp, SAMPLE_COUNT);
+			dft_step(&fourier_transform_arr[i * 2 + 1], ring_buffer_tmp);
 		}
 		
-		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT);
+		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT / 2);
 		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, serialized_voltages_tmp, sizeof(serialized_voltages_tmp));
 		
 		// Wait for the timer interrupt to control the sampling rate

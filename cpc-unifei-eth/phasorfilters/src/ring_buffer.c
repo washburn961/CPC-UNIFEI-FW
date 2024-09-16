@@ -16,35 +16,51 @@ uint32_t ring_buffer_init(ring_buffer* buffer) {
 // Writes data to the ring buffer
 uint32_t ring_buffer_write(ring_buffer* buffer, float data) {
 	buffer->content[buffer->tail] = data;
-	buffer->head = (buffer->head + 1) % buffer->size;
+
+	// Move the tail forward
 	buffer->tail = (buffer->tail + 1) % buffer->size;
-	buffer->is_full = buffer->tail == buffer->head;
+
+	// If the buffer is full, move the head forward to overwrite oldest data
+	if (buffer->is_full) {
+		buffer->head = (buffer->head + 1) % buffer->size;
+	}
+
+	// Check if buffer is full
+	buffer->is_full = (buffer->tail == buffer->head);
 
 	return 0;
 }
 
-// Reads data from the ring buffer at a specified index
+// Reads data from the ring buffer at a specified index (reverse order)
 uint32_t ring_buffer_read(ring_buffer* buffer, float* out_data, uint32_t index) {
 	uint32_t actual_index;
 
-	if (index <= buffer->tail) {
-		actual_index = buffer->tail - index - 1;
+	if (index >= buffer->size) {
+		return 1; // Out of bounds
+	}
+
+	if (buffer->is_full) {
+		actual_index = (buffer->tail + buffer->size - index - 1) % buffer->size;
 	}
 	else {
-		actual_index = buffer->size + buffer->tail - index - 1;
+		if (index >= buffer->tail) {
+			return 1; // Out of bounds (nothing to read)
+		}
+		actual_index = (buffer->tail - index - 1 + buffer->size) % buffer->size;
 	}
 
-	*out_data = buffer->content[actual_index % buffer->size];
-
+	*out_data = buffer->content[actual_index];
 	return 0;
 }
 
 // Reads multiple elements from the ring buffer
 uint32_t ring_buffer_read_many(ring_buffer* buffer, float* out_data, uint32_t out_size) {
-	if (out_size > buffer->size) return 1;
+	if (out_size > buffer->size) return 1; // Too many elements requested
 
 	for (uint32_t i = 0; i < out_size; ++i) {
-		ring_buffer_read(buffer, &out_data[i], out_size - i - 1);
+		if (ring_buffer_read(buffer, &out_data[i], i) != 0) {
+			return 1; // Error reading
+		}
 	}
 
 	return 0;

@@ -35,8 +35,8 @@ uint32_t dft_step(fourier_transform* transform, float* input) {
 			imag += input[n] * transform->sin[h * transform->size + n];
 		}
 
-		transform->real[h] = 2 * real / transform->size;
-		transform->imag[h] = -2 * imag / transform->size;
+		transform->real[h] = real / transform->size;
+		transform->imag[h] = -1 * imag / transform->size;
 	}
 
 	return ret;
