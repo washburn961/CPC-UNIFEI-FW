@@ -19,6 +19,7 @@
 #include "gpio.h"
 #include "fourier_transform.h"
 #include "ring_buffer.h"
+#include "goose_server.h"
 
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
@@ -157,7 +158,7 @@ void AnalogTask(void *argument)
 		}
 		
 		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT / 2);
-		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, serialized_voltages_tmp, sizeof(serialized_voltages_tmp));
+//		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, serialized_voltages_tmp, sizeof(serialized_voltages_tmp));
 		
 		// Wait for the timer interrupt to control the sampling rate
 		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
@@ -178,6 +179,7 @@ void BlinkTask(void *argument)
 			counter = 0;
 			udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, keepAliveMessage, sizeof(keepAliveMessage));
 		}
+		send_goose_ping();
 	}
 }
 
