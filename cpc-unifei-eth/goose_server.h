@@ -1,3 +1,5 @@
 #pragma once
 
-void send_goose_ping(void);
+#include "goose.h"
+
+void send_goose_test(void);

@@ -179,7 +179,7 @@ void BlinkTask(void *argument)
 			counter = 0;
 			udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, keepAliveMessage, sizeof(keepAliveMessage));
 		}
-		send_goose_ping();
+		send_goose_test();
 	}
 }
 
