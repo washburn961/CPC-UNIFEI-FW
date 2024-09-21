@@ -1,19 +1,75 @@
 #pragma once
 
+const char gocbref[] = "SE0110OC501CFG/LLN0$GO$AA3SE0110OC501G5";
+const char tatl[] = {
+	0x07,
+	0xd0
+};
+
+const char dataset[] = "SE0110OC501CFG/LLN0$AA3SE0110OC501G5";
+const char goid[] = "BOA NOITE DO CPC UNIFEI GOOSE";
+const char t[] = {
+	0x66,
+	0xec,
+	0x9b,
+	0xed,
+	0x68,
+	0x8c,
+	0xc0,
+	0xbf
+};
+const char stnum[] = {
+	0x01
+};
+const char sqnum[] = {
+	0x02,
+	0x7d,
+	0x90
+};
+const char simulation[] = {
+	0x00
+};
+const char confrev[] = {
+	0x01
+};
+const char ndscon[] = {
+	0x00
+};
+const char numdatasetentries[] = {
+	0x04
+};
+const char alldata[] = {
+	0x83,
+	0x01,
+	0x00,
+	0x83,
+	0x01,
+	0x00,
+	0x83,
+	0x01,
+	0x00,
+	0x83,
+	0x01,
+	0x00
+};
+
+
+
+
 const char packet_bytes[] = {
 	0x00,
-	0x05,
+	0x00,// estava 0x05 no arquivo do RELE mas na norma fala 0x00 para tipo 1 e 0x01 para tipo 1A
 	0x00,
 	0xa5,
 	0x00,
 	0x00,
 	0x00,
 	0x00,
-	0x61, // pdu start byte
-	0x81, // appid
-	0x9a,
-	0x80,
-	0x27,
+	0x61, // o que e issoo
+	0x81, // o que e issoo
+	0x9a, // o que e issoo
+	0x80, // tipo (gocbref)
+	0x27, // tamanho em bytes
 	0x53,
 	0x45,
 	0x30,
