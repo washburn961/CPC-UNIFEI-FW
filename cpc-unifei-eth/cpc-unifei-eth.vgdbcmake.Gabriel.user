@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<VisualGDBUserPreferences xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <UserDefinedVariableValues />
+  <DebugPreferences xsi:type="com.visualgdb.debug.embedded.preferences">
+    <CatchpointConfiguration>
+      <Exec>false</Exec>
+      <Fork>false</Fork>
+      <Vfork>false</Vfork>
+      <Syscalls />
+      <CXXCatchpoints />
+    </CatchpointConfiguration>
+    <VisualWatches />
+    <VisualWatchPreferences>
+      <DefaultProvider>com.sysprogs.imagewatch</DefaultProvider>
+      <ProviderPreferences>
+        <VisualWatchProviderPreferences>
+          <ProviderID>com.sysprogs.imagewatch</ProviderID>
+          <Preferences>
+            <ViewMode>ZoomedOut</ViewMode>
+            <Defaults />
+          </Preferences>
+        </VisualWatchProviderPreferences>
+      </ProviderPreferences>
+    </VisualWatchPreferences>
+    <MaskInterruptsWhileStepping>false</MaskInterruptsWhileStepping>
+    <MemoryWindowPreferences />
+    <b>
+      <p5>
+        <g>voltages</g>
+        <a>true</a>
+        <h>
+          <ComparisonMode>Equals</ComparisonMode>
+          <Enabled>false</Enabled>
+        </h>
+        <e>false</e>
+        <f>false</f>
+        <d>false</d>
+      </p5>
+      <p5>
+        <g>voltages</g>
+        <a>true</a>
+        <h>
+          <ComparisonMode>Equals</ComparisonMode>
+          <Enabled>false</Enabled>
+        </h>
+        <e>false</e>
+        <f>false</f>
+        <d>false</d>
+      </p5>
+    </b>
+    <c>
+      <a>
+        <a>com.sysprogs.AllGlobals</a>
+        <b />
+      </a>
+      <a>
+        <a>com.sysprogs.SpecificVariables</a>
+        <b />
+      </a>
+      <a>
+        <a>com.sysprogs.Custom</a>
+        <b />
+      </a>
+    </c>
+    <e>
+      <b>Custom</b>
+      <a>false</a>
+    </e>
+    <Suggestions />
+    <HardwareRegisters />
+  </DebugPreferences>
+</VisualGDBUserPreferences>
