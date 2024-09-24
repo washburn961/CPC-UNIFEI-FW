@@ -38,6 +38,8 @@ add_bsp_based_executable(
 		${BSP_ROOT}/goose_server.c
 		${BSP_ROOT}/goose_frame.h
 		${BSP_ROOT}/goose.h
-		${BSP_ROOT}/goose.c)
+		${BSP_ROOT}/goose.c
+		${BSP_ROOT}/ethernet_frames.h
+		${BSP_ROOT}/ethernet_frames.c)
 target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc)
 set_source_files_properties(${BSP_ROOT}/lua-5.4.7/src/lua.c ${BSP_ROOT}/lua-5.4.7/src/luac.c PROPERTIES HEADER_FILE_ONLY TRUE)
