@@ -157,7 +157,7 @@ void AnalogTask(void *argument)
 			dft_step(&fourier_transform_arr[i * 2 + 1], ring_buffer_tmp);
 		}
 		
-		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT / 2);
+//		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT / 2);
 //		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, serialized_voltages_tmp, sizeof(serialized_voltages_tmp));
 		
 		// Wait for the timer interrupt to control the sampling rate
@@ -168,20 +168,39 @@ void AnalogTask(void *argument)
 void BlinkTask(void *argument)
 {
 	char keepAliveMessage[] = "CPC UNIFEI IS STILL ALIVE";
+	uint8_t pin_states[8] = { 0 }; // Array to hold the state of all pins
 	uint8_t counter = 0;
-	
+
 	while (true)
 	{
+		// Toggle the LED to show the system is alive
 		HAL_GPIO_TogglePin(USER_LED0_GPIO_Port, USER_LED0_Pin);
 		osDelay(500);
+
+		// Read the state of each IN[number]_[letter] pin and store it in the pin_states array
+		pin_states[0] = (HAL_GPIO_ReadPin(IN1_A_GPIO_Port, IN1_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		pin_states[1] = (HAL_GPIO_ReadPin(IN2_A_GPIO_Port, IN2_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		pin_states[2] = (HAL_GPIO_ReadPin(IN1_B_GPIO_Port, IN1_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		pin_states[3] = (HAL_GPIO_ReadPin(IN2_B_GPIO_Port, IN2_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		pin_states[4] = (HAL_GPIO_ReadPin(IN1_C_GPIO_Port, IN1_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		pin_states[5] = (HAL_GPIO_ReadPin(IN2_C_GPIO_Port, IN2_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		pin_states[6] = (HAL_GPIO_ReadPin(IN1_D_GPIO_Port, IN1_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		pin_states[7] = (HAL_GPIO_ReadPin(IN2_D_GPIO_Port, IN2_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+
+		// Serialize the pin states and send them via UDP
+		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, pin_states, sizeof(pin_states));
+
 		if (++counter >= 10)
 		{
 			counter = 0;
 			udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, keepAliveMessage, sizeof(keepAliveMessage));
 		}
+
+		// Send a GOOSE test message
 		send_goose_test();
 	}
 }
+
 
 // ISR or other function where the analog conversion is complete
 void application_analog_semaphore_release(void)
