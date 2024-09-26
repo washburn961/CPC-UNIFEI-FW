@@ -38,6 +38,14 @@ add_bsp_based_executable(
 		${BSP_ROOT}/goose_server.c
 		${BSP_ROOT}/goose_frame.h
 		${BSP_ROOT}/ethernet_frames.h
-		${BSP_ROOT}/ethernet_frames.c)
-target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc)
+		${BSP_ROOT}/ethernet_frames.c
+		${BSP_ROOT}/iec61850/ber.h
+		${BSP_ROOT}/iec61850/goose.h
+		${BSP_ROOT}/iec61850/goose_publisher.h
+		${BSP_ROOT}/iec61850/iec_time.h
+		${BSP_ROOT}/iec61850/semaphore_interface.h
+		${BSP_ROOT}/iec61850/ber.c
+		${BSP_ROOT}/iec61850/goose.c
+		${BSP_ROOT}/iec61850/goose_publisher.c)
+target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc ../../../iec61850/iec61850)
 set_source_files_properties(${BSP_ROOT}/goose.h ${BSP_ROOT}/goose.c ${BSP_ROOT}/lua-5.4.7/src/lua.c ${BSP_ROOT}/lua-5.4.7/src/luac.c PROPERTIES HEADER_FILE_ONLY TRUE)
