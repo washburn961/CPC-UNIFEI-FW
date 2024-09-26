@@ -19,23 +19,45 @@
 #include "gpio.h"
 #include "fourier_transform.h"
 #include "ring_buffer.h"
-#include "goose_server.h"
+#include "lwip/pbuf.h"
+#include "lwip/netif.h"
+#include "lwip/err.h"
+#include "lwip.h"
+#include "goose_frame.h"
+#include "goose_publisher.h"
 
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
+void GooseTask(void *argument);
+void InputMonitoringTaskTask(void *argument);
 void serialize_voltages(struct ads8686s_conversion_voltage *voltages, uint8_t* out_serialized, uint8_t size);
+void link_output(uint8_t* byte_stream, size_t length);
 
+uint8_t input_status[9] = { 0 };
+goose_message_params input_mon_goose_params;
 osSemaphoreId_t analogTaskMainSemaphore;
 osSemaphoreId_t analogTaskConversionSemaphore;
 osThreadId_t blinkTaskHandle;
 osThreadId_t analogTaskHandle;
+osThreadId_t gooseTaskHandle;
+osThreadId_t inputMonitoringTaskHandle;
 const osThreadAttr_t analogTask_attributes = {
 	.name = "analogTask",
 	.stack_size = 512 * 8,
 	.priority = (osPriority_t) osPriorityRealtime,
 };
+const osThreadAttr_t gooseTask_attributes = {
+	.name = "gooseTask",
+	.stack_size = 512 * 4,
+	.priority = (osPriority_t) osPriorityRealtime,
+};
 const osThreadAttr_t blinkTask_attributes = {
 	.name = "blinkTask",
+	.stack_size = 512 * 4,
+	.priority = (osPriority_t) osPriorityNormal,
+};
+const osThreadAttr_t inputMonitoringTask_attributes = {
+	.name = "inputMonitoringTask",
 	.stack_size = 512 * 4,
 	.priority = (osPriority_t) osPriorityNormal,
 };
@@ -78,6 +100,8 @@ uint32_t application_init(void)
 	
 	analogTaskHandle = osThreadNew(AnalogTask, NULL, &analogTask_attributes);
 	blinkTaskHandle = osThreadNew(BlinkTask, NULL, &blinkTask_attributes);
+	gooseTaskHandle = osThreadNew(GooseTask, NULL, &gooseTask_attributes);
+	inputMonitoringTaskHandle = osThreadNew(InputMonitoringTaskTask, NULL, &inputMonitoringTask_attributes);
 	
 	analogTaskMainSemaphore = osSemaphoreNew(1, 0, NULL);
 	analogTaskConversionSemaphore = osSemaphoreNew(1, 0, NULL);
@@ -168,7 +192,6 @@ void AnalogTask(void *argument)
 void BlinkTask(void *argument)
 {
 	char keepAliveMessage[] = "CPC UNIFEI IS STILL ALIVE";
-	uint8_t pin_states[8] = { 0 }; // Array to hold the state of all pins
 	uint8_t counter = 0;
 
 	while (true)
@@ -177,30 +200,84 @@ void BlinkTask(void *argument)
 		HAL_GPIO_TogglePin(USER_LED0_GPIO_Port, USER_LED0_Pin);
 		osDelay(500);
 
-		// Read the state of each IN[number]_[letter] pin and store it in the pin_states array
-		pin_states[0] = (HAL_GPIO_ReadPin(IN1_A_GPIO_Port, IN1_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		pin_states[1] = (HAL_GPIO_ReadPin(IN2_A_GPIO_Port, IN2_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		pin_states[2] = (HAL_GPIO_ReadPin(IN1_B_GPIO_Port, IN1_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		pin_states[3] = (HAL_GPIO_ReadPin(IN2_B_GPIO_Port, IN2_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		pin_states[4] = (HAL_GPIO_ReadPin(IN1_C_GPIO_Port, IN1_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		pin_states[5] = (HAL_GPIO_ReadPin(IN2_C_GPIO_Port, IN2_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		pin_states[6] = (HAL_GPIO_ReadPin(IN1_D_GPIO_Port, IN1_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		pin_states[7] = (HAL_GPIO_ReadPin(IN2_D_GPIO_Port, IN2_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-
-		// Serialize the pin states and send them via UDP
-		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, pin_states, sizeof(pin_states));
-
 		if (++counter >= 10)
 		{
 			counter = 0;
 			udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, keepAliveMessage, sizeof(keepAliveMessage));
 		}
-
-		// Send a GOOSE test message
-		send_goose_test();
 	}
 }
 
+void GooseTask(void *argument)
+{
+	goose_publisher_init(&link_output);
+	
+	while (true)
+	{
+		goose_publisher_process();
+		osDelay(1);
+	}
+}
+
+void InputMonitoringTaskTask(void *argument)
+{
+	goose_handle* input_mon_goose_handle = goose_init(gnetif.hwaddr, destination, app_id);
+	
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.gocbref), (uint8_t*)gocbRef, strlen(gocbRef));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.dataset), (uint8_t*)dataset, strlen(dataset));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.go_id), (uint8_t*)go_id, strlen(go_id));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.time_allowed_to_live), (uint8_t*)&time_allowed_to_live, sizeof(time_allowed_to_live));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.t), (uint8_t*)&t, sizeof(t));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.st_num), (uint8_t*)&st_num, sizeof(st_num));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.sq_num), (uint8_t*)&sq_num, sizeof(sq_num));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.simulation), (uint8_t*)&simulation, sizeof(simulation));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.conf_rev), (uint8_t*)&conf_rev, sizeof(conf_rev));
+	ber_set(&(input_mon_goose_handle->frame->pdu_list.nds_com), (uint8_t*)&nds_com, sizeof(nds_com));
+		
+	for (size_t i = 0; i < 9; i++)
+	{
+		goose_all_data_entry_add(input_mon_goose_handle, 0x83, sizeof(input_status[i]), &(input_status[i]));
+	}
+	
+	input_mon_goose_params.default_time_allowed_to_live = 1000;
+	input_mon_goose_params.name = "inputMonitoring";
+	input_mon_goose_params.handle = input_mon_goose_handle;
+	
+	goose_publisher_register(input_mon_goose_params);
+	
+	uint8_t different_data_flag = 0;
+	uint8_t input_status_tmp[9] = { 0 };
+	
+	while (true)
+	{
+		input_status_tmp[0] = (HAL_GPIO_ReadPin(IN1_A_GPIO_Port, IN1_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[1] = (HAL_GPIO_ReadPin(IN2_A_GPIO_Port, IN2_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[2] = (HAL_GPIO_ReadPin(IN1_B_GPIO_Port, IN1_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[3] = (HAL_GPIO_ReadPin(IN2_B_GPIO_Port, IN2_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[4] = (HAL_GPIO_ReadPin(IN1_C_GPIO_Port, IN1_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[5] = (HAL_GPIO_ReadPin(IN2_C_GPIO_Port, IN2_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[6] = (HAL_GPIO_ReadPin(IN1_D_GPIO_Port, IN1_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[7] = (HAL_GPIO_ReadPin(IN2_D_GPIO_Port, IN2_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		input_status_tmp[8] = (HAL_GPIO_ReadPin(USER_BUTTON_GPIO_Port, USER_BUTTON_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
+		
+		for (size_t i = 0; i < 9; i++)
+		{
+			if (input_status_tmp[i] != input_status[i])
+			{
+				goose_all_data_entry_modify(input_mon_goose_handle, i, 0x83, sizeof(input_status_tmp[i]), &(input_status_tmp[i]));
+				different_data_flag = 1;
+			}
+			
+			input_status[i] = input_status_tmp[i];
+		}
+		
+		if (different_data_flag)
+		{
+			goose_publisher_notify(input_mon_goose_params.name);
+			different_data_flag = 0;
+		}
+	}
+}
 
 // ISR or other function where the analog conversion is complete
 void application_analog_semaphore_release(void)
@@ -228,4 +305,32 @@ void serialize_voltages(struct ads8686s_conversion_voltage *voltages, uint8_t* o
 		// Serialize the current struct to the byte array
 		memcpy(out_serialized + i * struct_size, &voltages[i], struct_size);
 	}
+}
+
+void link_output(uint8_t* byte_stream, size_t length)
+{
+	struct pbuf *p;
+
+	LOCK_TCPIP_CORE();
+
+	// Allocate a pbuf for the Ethernet frame
+	p = pbuf_alloc(PBUF_RAW, length, PBUF_RAM);
+	if (p == NULL) {
+		// Handle allocation failure
+		UNLOCK_TCPIP_CORE();
+		return;
+	}
+
+	// Copy the Ethernet frame into the pbuf
+	memcpy(p->payload, byte_stream, length);
+
+	// Send the pbuf using the linkoutput function
+	if (gnetif.linkoutput(&gnetif, p) != ERR_OK) {
+		// Handle send error
+	}
+
+	// Free the pbuf
+	pbuf_free(p);
+    
+	UNLOCK_TCPIP_CORE();
 }
