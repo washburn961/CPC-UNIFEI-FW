@@ -1,5 +1,6 @@
 #define SAMPLING_RATE_CONTROL_FLAG 0x0001
 #define ADC_BUSY_FLAG 0x0002
+#define GOOSE_TASK_FLAG 0x0003
 #define CHANNEL_COUNT 16
 #define SAMPLE_COUNT 16
 
@@ -29,14 +30,12 @@
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
 void GooseTask(void *argument);
-void InputMonitoringTaskTask(void *argument);
+void InputMonitoringTask(void *argument);
 void serialize_voltages(struct ads8686s_conversion_voltage *voltages, uint8_t* out_serialized, uint8_t size);
 void link_output(uint8_t* byte_stream, size_t length);
 
 uint8_t input_status[9] = { 0 };
 goose_message_params input_mon_goose_params;
-osSemaphoreId_t analogTaskMainSemaphore;
-osSemaphoreId_t analogTaskConversionSemaphore;
 osThreadId_t blinkTaskHandle;
 osThreadId_t analogTaskHandle;
 osThreadId_t gooseTaskHandle;
@@ -100,11 +99,11 @@ uint32_t application_init(void)
 	
 	analogTaskHandle = osThreadNew(AnalogTask, NULL, &analogTask_attributes);
 	blinkTaskHandle = osThreadNew(BlinkTask, NULL, &blinkTask_attributes);
+	inputMonitoringTaskHandle = osThreadNew(InputMonitoringTask, NULL, &inputMonitoringTask_attributes);
 	gooseTaskHandle = osThreadNew(GooseTask, NULL, &gooseTask_attributes);
-	inputMonitoringTaskHandle = osThreadNew(InputMonitoringTaskTask, NULL, &inputMonitoringTask_attributes);
 	
-	analogTaskMainSemaphore = osSemaphoreNew(1, 0, NULL);
-	analogTaskConversionSemaphore = osSemaphoreNew(1, 0, NULL);
+	HAL_TIM_Base_Start_IT(&htim2);
+	HAL_TIM_Base_Start_IT(&htim3);
 	
 	return 0;
 }
@@ -146,8 +145,6 @@ void AnalogTask(void *argument)
 	{
 		HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_SET);
 	}
-	
-	HAL_TIM_Base_Start_IT(&htim2);
 	
 	// Start the first conversion before entering the loop
 	GPIOD->BSRR = GPIO_PIN_12;
@@ -214,12 +211,12 @@ void GooseTask(void *argument)
 	
 	while (true)
 	{
+		osThreadFlagsWait(GOOSE_TASK_FLAG, osFlagsWaitAny, osWaitForever);
 		goose_publisher_process();
-		osDelay(1);
 	}
 }
 
-void InputMonitoringTaskTask(void *argument)
+void InputMonitoringTask(void *argument)
 {
 	goose_handle* input_mon_goose_handle = goose_init(gnetif.hwaddr, destination, app_id);
 	
@@ -280,14 +277,19 @@ void InputMonitoringTaskTask(void *argument)
 }
 
 // ISR or other function where the analog conversion is complete
-void application_analog_semaphore_release(void)
+void application_adc_timing_flag_set(void)
 {
 	osThreadFlagsSet(analogTaskHandle, SAMPLING_RATE_CONTROL_FLAG); // Signal to start conversion
 }
 
-void application_analog_busy_semaphore_release(void)
+void application_adc_busy_flag_set(void)
 {
 	osThreadFlagsSet(analogTaskHandle, ADC_BUSY_FLAG); // Signal conversion complete
+}
+
+void application_goose_flag_set(void)
+{
+	osThreadFlagsSet(gooseTaskHandle, GOOSE_TASK_FLAG);
 }
 
 uint32_t application_analog_busy_semaphore_can_release(uint16_t GPIO_Pin)
