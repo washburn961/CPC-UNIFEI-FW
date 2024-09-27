@@ -77,7 +77,8 @@ void goose_publisher_notify(const char* name)
     {
         if (publisher.message_list[i].name && strcmp(publisher.message_list[i].name, name) == 0)
         {
-
+	        publisher.message_list[i].updated = 1;
+	        goose_message_housekeeping(&(publisher.message_list[i]));
         }
     }
 
