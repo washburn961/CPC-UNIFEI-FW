@@ -47,6 +47,12 @@ add_bsp_based_executable(
 		${BSP_ROOT}/iec61850/ber.c
 		${BSP_ROOT}/iec61850/goose.c
 		${BSP_ROOT}/iec61850/goose_publisher.c
-		${BSP_ROOT}/sempahore_interface.c)
-target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc ../../../iec61850/iec61850 iec61850 iec61850)
-set_source_files_properties(${BSP_ROOT}/goose.h ${BSP_ROOT}/goose.c ${BSP_ROOT}/lua-5.4.7/src/lua.c ${BSP_ROOT}/lua-5.4.7/src/luac.c PROPERTIES HEADER_FILE_ONLY TRUE)
+		${BSP_ROOT}/sempahore_interface.c
+		${BSP_ROOT}/power-system-protection/src/ANSI50.c
+		${BSP_ROOT}/power-system-protection/src/ANSI51.c
+		${BSP_ROOT}/power-system-protection/src/include/ANSI50.h
+		${BSP_ROOT}/power-system-protection/src/include/ANSI51.h
+		${BSP_ROOT}/power-system-protection/src/include/cpc_complex.h
+		${BSP_ROOT}/power-system-protection/src/cpc_complex.c)
+target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc ../../../iec61850/iec61850 iec61850 iec61850 power-system-protection/src/include)
+set_source_files_properties(${BSP_ROOT}/src/include/ANSI67.h ${BSP_ROOT}/src/include/ANSI21.h ${BSP_ROOT}/src/include/ANSI50.h ${BSP_ROOT}/goose.h ${BSP_ROOT}/goose.c ${BSP_ROOT}/lua-5.4.7/src/lua.c ${BSP_ROOT}/lua-5.4.7/src/luac.c PROPERTIES HEADER_FILE_ONLY TRUE)

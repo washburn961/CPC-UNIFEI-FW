@@ -1,5 +1,7 @@
 #include "fourier_transform.h"
 
+#define ONE_OVER_SQRT2 0.70710678118
+
 uint32_t dft_init(fourier_transform* transform) {
 	uint32_t ret = 0;
 
@@ -35,8 +37,8 @@ uint32_t dft_step(fourier_transform* transform, float* input) {
 			imag += input[n] * transform->sin[h * transform->size + n];
 		}
 
-		transform->real[h] = real / transform->size;
-		transform->imag[h] = -1 * imag / transform->size;
+		transform->real[h] = (2 * real / transform->size) * ONE_OVER_SQRT2;
+		transform->imag[h] = (-2 * imag / transform->size) * ONE_OVER_SQRT2;
 	}
 
 	return ret;

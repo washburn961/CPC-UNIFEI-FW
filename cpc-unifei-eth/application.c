@@ -1,9 +1,3 @@
-#define SAMPLING_RATE_CONTROL_FLAG 0x0001
-#define ADC_BUSY_FLAG 0x0002
-#define GOOSE_TASK_FLAG 0x0003
-#define CHANNEL_COUNT 16
-#define SAMPLE_COUNT 16
-
 #include "application.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,18 +20,41 @@
 #include "lwip.h"
 #include "goose_frame.h"
 #include "goose_publisher.h"
+#include "ANSI51.h"
+#include "ANSI50.h"
+#include "cpc_complex.h"
+
+#define SAMPLING_RATE_CONTROL_FLAG 0x0001
+#define ADC_BUSY_FLAG 0x0002
+#define GOOSE_TASK_FLAG 0x0003
+#define CHANNEL_COUNT 16
+#define SAMPLE_COUNT 16
+#define VTOC_RATIO 10.0f
+#define VTOC(v) ((v) * VTOC_RATIO)
+
 
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
 void GooseTask(void *argument);
+void OUT1Task(void *argument);
+void OUT3Task(void *argument);
 void InputMonitoringTask(void *argument);
 void serialize_voltages(struct ads8686s_conversion_voltage *voltages, uint8_t* out_serialized, uint8_t size);
 void link_output(uint8_t* byte_stream, size_t length);
+void parametrize_overcurrent_protection(void);
+void relay_outputs_selftest(void);
+void send_float_over_udp(float value);
 
+ANSI51 ansi51_element;
+uint32_t ansi51_status;
+ANSI50 ansi50_element;
+uint32_t ansi50_status;
 uint8_t input_status[9] = { 0 };
 goose_message_params input_mon_goose_params;
 osThreadId_t blinkTaskHandle;
 osThreadId_t analogTaskHandle;
+osThreadId_t out1TaskHandle;
+osThreadId_t out3TaskHandle;
 osThreadId_t gooseTaskHandle;
 osThreadId_t inputMonitoringTaskHandle;
 const osThreadAttr_t analogTask_attributes = {
@@ -45,10 +62,20 @@ const osThreadAttr_t analogTask_attributes = {
 	.stack_size = 512 * 8,
 	.priority = (osPriority_t) osPriorityRealtime,
 };
+const osThreadAttr_t out1Task_attributes = {
+	.name = "out1Task",
+	.stack_size = 512,
+	.priority = (osPriority_t) osPriorityHigh,
+};
+const osThreadAttr_t out3Task_attributes = {
+	.name = "out3Task",
+	.stack_size = 512,
+	.priority = (osPriority_t) osPriorityHigh,
+};
 const osThreadAttr_t gooseTask_attributes = {
 	.name = "gooseTask",
 	.stack_size = 512 * 4,
-	.priority = (osPriority_t) osPriorityRealtime,
+	.priority = (osPriority_t) osPriorityHigh,
 };
 const osThreadAttr_t blinkTask_attributes = {
 	.name = "blinkTask",
@@ -101,6 +128,8 @@ uint32_t application_init(void)
 	blinkTaskHandle = osThreadNew(BlinkTask, NULL, &blinkTask_attributes);
 	inputMonitoringTaskHandle = osThreadNew(InputMonitoringTask, NULL, &inputMonitoringTask_attributes);
 	gooseTaskHandle = osThreadNew(GooseTask, NULL, &gooseTask_attributes);
+	out1TaskHandle = osThreadNew(OUT1Task, NULL, &out1Task_attributes);
+	out3TaskHandle = osThreadNew(OUT3Task, NULL, &out3Task_attributes);
 	
 	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_TIM_Base_Start_IT(&htim3);
@@ -110,6 +139,9 @@ uint32_t application_init(void)
 
 void AnalogTask(void *argument)
 {
+//	relay_outputs_selftest();
+	parametrize_overcurrent_protection();
+	
 	uint16_t counter = 0;
 	
 	if (!ads8686s_init(&ads8686s, &ads8686s_init_param))
@@ -150,6 +182,9 @@ void AnalogTask(void *argument)
 	GPIOD->BSRR = GPIO_PIN_12;
 	GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
 	
+	complex_t complex_tmp[3];
+	float temp;
+	
 	while (true)
 	{
 		// Wait for the conversion complete signal (set by GPIO ISR)
@@ -181,8 +216,86 @@ void AnalogTask(void *argument)
 //		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT / 2);
 //		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, serialized_voltages_tmp, sizeof(serialized_voltages_tmp));
 		
+		complex_tmp[0].real = VTOC(real_arr[0][1]);
+		complex_tmp[0].imag = VTOC(imag_arr[0][1]);
+		ansi51_element.current[0] = complex_tmp[0];
+		ansi50_element.current[0] = complex_tmp[0];
+		
+		complex_tmp[1].real = VTOC(real_arr[2][1]);
+		complex_tmp[1].imag = VTOC(imag_arr[2][1]);
+		ansi51_element.current[1] = complex_tmp[1];
+		ansi50_element.current[1] = complex_tmp[1];
+		
+		complex_tmp[2].real = VTOC(real_arr[4][1]);
+		complex_tmp[2].imag = VTOC(imag_arr[4][1]);
+		ansi51_element.current[2] = complex_tmp[2];
+		ansi50_element.current[2] = complex_tmp[2];
+		
+		ANSI51_Step(&ansi51_element);
+		ANSI50_Step(&ansi50_element);
+		
+		dft_get_magnitude(&fourier_transform_arr[2], &temp, 1);
+		send_float_over_udp(temp);
+		
+		
+//		if (ansi51_element.is_tripped[0] || ansi51_element.is_tripped[1] || ansi51_element.is_tripped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
+//		}
+//		
+//		if (ansi50_element.is_tripped[0] || ansi50_element.is_tripped[1] || ansi50_element.is_tripped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
+//		}
+		
+		ansi51_status = (ansi51_element.is_tripped[0] || ansi51_element.is_tripped[1] || ansi51_element.is_tripped[2]) ? 0x1 : 0x0;
+		ansi50_status = (ansi50_element.is_tripped[0] || ansi50_element.is_tripped[1] || ansi50_element.is_tripped[2]) ? 0x1 : 0x0;
+		
 		// Wait for the timer interrupt to control the sampling rate
 		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
+	}
+}
+
+void OUT1Task(void *argument)
+{
+	GPIO_PinState prev_pin_state = GPIO_PIN_RESET;
+	GPIO_PinState pin_state = GPIO_PIN_RESET;
+	while (true)
+	{
+		pin_state = ansi50_status ? GPIO_PIN_SET : GPIO_PIN_RESET;
+		if (prev_pin_state != pin_state)
+		{
+			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, pin_state);
+			
+			if (prev_pin_state == GPIO_PIN_RESET)
+			{
+				osDelay(100);
+			}
+			
+			prev_pin_state = pin_state;
+		}
+	}
+}
+
+void OUT3Task(void *argument)
+{
+	GPIO_PinState prev_pin_state = GPIO_PIN_RESET;
+	GPIO_PinState pin_state = GPIO_PIN_RESET;
+	while (true)
+	{
+		pin_state = ansi51_status ? GPIO_PIN_SET : GPIO_PIN_RESET;
+		
+		if (prev_pin_state != pin_state)
+		{
+			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, pin_state);
+			
+			if (prev_pin_state == GPIO_PIN_RESET)
+			{
+				osDelay(100);
+			}
+			
+			prev_pin_state = pin_state;
+		}
 	}
 }
 
@@ -335,4 +448,57 @@ void link_output(uint8_t* byte_stream, size_t length)
 	pbuf_free(p);
     
 	UNLOCK_TCPIP_CORE();
+}
+
+void parametrize_overcurrent_protection()
+{
+	ANSI51_Init(&ansi51_element, 0.5f, 5.5f, 0.00104166666f, STANDARD_2, 1);
+	ANSI50_Init(&ansi50_element, 17);
+}
+
+void relay_outputs_selftest(void)
+{
+	HAL_GPIO_TogglePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT4_B_OUT_GPIO_Port, OUT4_B_OUT_Pin);
+	osDelay(500);
+	
+	HAL_GPIO_TogglePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin);
+	osDelay(200);
+	HAL_GPIO_TogglePin(OUT4_B_OUT_GPIO_Port, OUT4_B_OUT_Pin);
+}
+
+void send_float_over_udp(float value)
+{
+	char buffer[32]; // Create a buffer to hold the string representation of the float
+
+	// Convert the float to a string with 8 decimal places
+	snprintf(buffer, sizeof(buffer), "%.8f", value);
+
+	// Send the string over UDP using the default address and port
+	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, buffer, (uint16_t)strlen(buffer));
 }
