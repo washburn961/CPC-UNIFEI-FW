@@ -180,4 +180,3 @@ void ANSI67_Reset(ANSI67* element) {
 	if (!element->is_pickup) return;
 	element->is_pickup = 0;
 }
-

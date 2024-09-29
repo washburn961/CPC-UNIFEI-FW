@@ -4,19 +4,19 @@
 int sum_trip;
 
 complex_t SetCurrent(ANSI50* element, complex_t iphA, complex_t iphB, complex_t iphC) {
-	element->current[1] = iphA;
-	element->current[2] = iphB;
-	element->current[3] = iphC;
+	element->current[0]= iphA;
+	element->current[1]= iphB;
+	element->current[2]= iphC;
 }
 
 
 void ANSI50_Init(ANSI50* element, float pick_up_current) {
 	element->pick_up_current = pick_up_current; 
-	element->is_tripped[3] = 0; 
+	element->is_tripped[PHASE_COUNT] = 0; 
 }
 
 void ANSI50_Step(ANSI50* element) {
-	for (int i = 1; i < 4; i++) {
+	for (int i = 0; i < PHASE_COUNT; i++) {
 		if (complex_get_magnitude(element->current[i]) > element->pick_up_current) {
 			element->is_tripped[i] = 1;
 		}
@@ -31,7 +31,7 @@ void ANSI50_Step(ANSI50* element) {
 }
 
 void ANSI50_Reset(ANSI50* element) {
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < PHASE_COUNT; i++) {
 		element->is_tripped[i] = 0;
 	}
 }

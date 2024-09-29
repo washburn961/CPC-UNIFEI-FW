@@ -1,6 +1,8 @@
 #ifndef ANSI_50_H
 #define ANSI_50_H
 
+#define PHASE_COUNT 3
+
 /**
  * @file ANSI50.h
  * @brief ANSI 50 Instantaneous Overcurrent Protection Element Header

@@ -7,9 +7,9 @@ float sum_trip;
 
 // Função para definir as correntes de fase no relé ANSI 51
  void SetCurrent(ANSI51* element, complex_t iphA, complex_t iphB, complex_t iphC) {
-    element->current[1] = iphA;
-    element->current[2] = iphB;
-    element->current[3] = iphC;
+    element->current[0] = iphA;
+    element->current[1] = iphB;
+    element->current[2] = iphC;
 }
 
 // Função para inicializar o relé ANSI 51
@@ -19,8 +19,8 @@ void ANSI51_Init(ANSI51* element, float td, float pick_up_current, float time_st
     element->time_step = time_step;
     element->standard = standard;
     element->curve = curve;
-    element->is_tripped[3] = 0;
-    element->time[3] = 0;
+    element->is_tripped[PHASE_COUNT] = 0;
+    element->time[PHASE_COUNT] = 0;
 }
 
 // Função para verificar a condição de sobrecorrente em uma fase específica
@@ -78,7 +78,7 @@ static float CalculateTimeToTrip(ANSI51* element, int phase) {
 
 // Função para avançar a simulação do relé ANSI 51 e calcular o tempo de operação por fase
 void ANSI51_Step(ANSI51* element) {
-    for (int phase = 1; phase < 4; phase++) {
+    for (int phase = 0; phase < PHASE_COUNT; phase++) {
         if (!CheckOvercurrentCondition(element, phase)) {
             if (element->time[phase] > 0) {
                 element->time[phase] = 0.0f; // Reseta o tempo acumulado se a corrente voltar ao normal
@@ -96,7 +96,7 @@ void ANSI51_Step(ANSI51* element) {
 
 // Função para resetar o estado de disparo do relé ANSI 51
 void ANSI51_Reset(ANSI51* element) {
-    for (int phase = 1; phase < 4; phase++) {
+    for (int phase = 0; phase < PHASE_COUNT; phase++) {
         if (element->is_tripped[phase]) {
             element->is_tripped[phase] = 0;
             element->time[phase] = 0.0f;
