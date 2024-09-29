@@ -76,7 +76,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	
   /* USER CODE END 1 */
 
   /* MPU Configuration--------------------------------------------------------*/
@@ -116,6 +116,7 @@ int main(void)
   MX_OCTOSPI1_Init();
   MX_SPI1_Init();
   MX_TIM2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   /* USER CODE END 2 */
 
@@ -238,7 +239,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (application_analog_busy_semaphore_can_release(GPIO_Pin)) // Replace BUSY_Pin with the actual pin number for your BUSY signal
 	{
-		application_analog_busy_semaphore_release();
+		application_adc_busy_flag_set();
 	}
 }
 /* USER CODE END 4 */
@@ -313,7 +314,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 	if (htim->Instance == TIM2)
 	{
-		application_analog_semaphore_release();
+		application_goose_flag_set();
+	}
+	
+	if (htim->Instance == TIM3)
+	{
+		application_adc_timing_flag_set();
 	}
   /* USER CODE END Callback 1 */
 }

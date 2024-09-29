@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define PROCESSING_TIMING_Pin GPIO_PIN_4
 #define PROCESSING_TIMING_GPIO_Port GPIOE
+#define USER_BUTTON_Pin GPIO_PIN_0
+#define USER_BUTTON_GPIO_Port GPIOC
 #define RMII_MDC_Pin GPIO_PIN_1
 #define RMII_MDC_GPIO_Port GPIOC
 #define RMII_REF_CLK_Pin GPIO_PIN_1
@@ -77,6 +79,22 @@ void Error_Handler(void);
 #define USER_LED1_GPIO_Port GPIOB
 #define USER_LED2_Pin GPIO_PIN_2
 #define USER_LED2_GPIO_Port GPIOB
+#define IN1_A_Pin GPIO_PIN_13
+#define IN1_A_GPIO_Port GPIOF
+#define IN2_A_Pin GPIO_PIN_14
+#define IN2_A_GPIO_Port GPIOF
+#define IN1_B_Pin GPIO_PIN_15
+#define IN1_B_GPIO_Port GPIOF
+#define IN2_B_Pin GPIO_PIN_0
+#define IN2_B_GPIO_Port GPIOG
+#define IN1_C_Pin GPIO_PIN_1
+#define IN1_C_GPIO_Port GPIOG
+#define IN2_C_Pin GPIO_PIN_7
+#define IN2_C_GPIO_Port GPIOE
+#define IN1_D_Pin GPIO_PIN_8
+#define IN1_D_GPIO_Port GPIOE
+#define IN2_D_Pin GPIO_PIN_9
+#define IN2_D_GPIO_Port GPIOE
 #define RMII_TX_EN_Pin GPIO_PIN_11
 #define RMII_TX_EN_GPIO_Port GPIOB
 #define RMII_TXD0_Pin GPIO_PIN_12
