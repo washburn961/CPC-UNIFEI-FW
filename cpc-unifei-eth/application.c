@@ -1,28 +1,4 @@
 #include "application.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include "FreeRTOS.h"
-#include "task.h"
-#include "spi.h"
-#include "gpio.h"
-#include "tim.h"
-#include "cmsis_os.h"
-#include "ads8686s.h"
-#include "udp_server.h"
-#include "gpio.h"
-#include "fourier_transform.h"
-#include "ring_buffer.h"
-#include "lwip/pbuf.h"
-#include "lwip/netif.h"
-#include "lwip/err.h"
-#include "lwip.h"
-#include "goose_frame.h"
-#include "goose_publisher.h"
-#include "ANSI51.h"
-#include "ANSI50.h"
-#include "cpc_complex.h"
 
 #define SAMPLING_RATE_CONTROL_FLAG 0x0001
 #define ADC_BUSY_FLAG 0x0002
@@ -30,60 +6,30 @@
 #define CHANNEL_COUNT 16
 #define SAMPLE_COUNT 16
 #define VTOC_RATIO 10.0f
+#define CTR 4000.0f / 5.0f
 #define VTOC(v) ((v) * VTOC_RATIO)
+#define SEC2PRI(i) ((i) * CTR)
 
 
 void AnalogTask(void *argument);
 void BlinkTask(void *argument);
-void GooseTask(void *argument);
-void OUT1Task(void *argument);
-void OUT3Task(void *argument);
-void InputMonitoringTask(void *argument);
 void serialize_voltages(struct ads8686s_conversion_voltage *voltages, uint8_t* out_serialized, uint8_t size);
 void link_output(uint8_t* byte_stream, size_t length);
-void parametrize_overcurrent_protection(void);
-void relay_outputs_selftest(void);
+void parametrize_protection(void);
 void send_float_over_udp(float value);
 
 ANSI51 ansi51_element;
-uint32_t ansi51_status;
 ANSI50 ansi50_element;
-uint32_t ansi50_status;
-uint8_t input_status[9] = { 0 };
-goose_message_params input_mon_goose_params;
+ANSI87B ansi87b_element;
 osThreadId_t blinkTaskHandle;
 osThreadId_t analogTaskHandle;
-osThreadId_t out1TaskHandle;
-osThreadId_t out3TaskHandle;
-osThreadId_t gooseTaskHandle;
-osThreadId_t inputMonitoringTaskHandle;
 const osThreadAttr_t analogTask_attributes = {
 	.name = "analogTask",
 	.stack_size = 512 * 8,
 	.priority = (osPriority_t) osPriorityRealtime,
 };
-const osThreadAttr_t out1Task_attributes = {
-	.name = "out1Task",
-	.stack_size = 512,
-	.priority = (osPriority_t) osPriorityHigh,
-};
-const osThreadAttr_t out3Task_attributes = {
-	.name = "out3Task",
-	.stack_size = 512,
-	.priority = (osPriority_t) osPriorityHigh,
-};
-const osThreadAttr_t gooseTask_attributes = {
-	.name = "gooseTask",
-	.stack_size = 512 * 4,
-	.priority = (osPriority_t) osPriorityHigh,
-};
 const osThreadAttr_t blinkTask_attributes = {
 	.name = "blinkTask",
-	.stack_size = 512 * 4,
-	.priority = (osPriority_t) osPriorityNormal,
-};
-const osThreadAttr_t inputMonitoringTask_attributes = {
-	.name = "inputMonitoringTask",
 	.stack_size = 512 * 4,
 	.priority = (osPriority_t) osPriorityNormal,
 };
@@ -94,8 +40,6 @@ struct ads8686s_init_param ads8686s_init_param = {
 struct ads8686s_conversion_result conversion_buffer[CHANNEL_COUNT / 2];
 struct ads8686s_conversion_voltage voltage_buffer[CHANNEL_COUNT / 2] = { 0 };
 uint8_t serialized_voltages_tmp[CHANNEL_COUNT * sizeof(float)] = { 0 };
-//ring_buffer ring_buffer_arr;
-//float ring_buffer_content_arr[SAMPLE_COUNT];
 ring_buffer ring_buffer_arr[CHANNEL_COUNT];
 fourier_transform fourier_transform_arr[CHANNEL_COUNT];
 float ring_buffer_content_arr[CHANNEL_COUNT][SAMPLE_COUNT] = { 0 };
@@ -104,12 +48,10 @@ float imag_arr[CHANNEL_COUNT][SAMPLE_COUNT] = { 0 };
 float sin_coef[SAMPLE_COUNT * SAMPLE_COUNT] = { 0 };
 float cos_coef[SAMPLE_COUNT * SAMPLE_COUNT] = { 0 };
 float ring_buffer_tmp[SAMPLE_COUNT] = { 0 };
+size_t tick_ms = 0;
 
 uint32_t application_init(void)
 {
-//	ring_buffer_arr.content = ring_buffer_content_arr;
-//	ring_buffer_arr.size = SAMPLE_COUNT;
-//	ring_buffer_init(&ring_buffer_arr);
 	for (uint8_t i = 0; i < CHANNEL_COUNT; i++)
 	{
 		ring_buffer_arr[i].content = ring_buffer_content_arr[i];
@@ -126,10 +68,6 @@ uint32_t application_init(void)
 	
 	analogTaskHandle = osThreadNew(AnalogTask, NULL, &analogTask_attributes);
 	blinkTaskHandle = osThreadNew(BlinkTask, NULL, &blinkTask_attributes);
-	inputMonitoringTaskHandle = osThreadNew(InputMonitoringTask, NULL, &inputMonitoringTask_attributes);
-	gooseTaskHandle = osThreadNew(GooseTask, NULL, &gooseTask_attributes);
-	out1TaskHandle = osThreadNew(OUT1Task, NULL, &out1Task_attributes);
-	out3TaskHandle = osThreadNew(OUT3Task, NULL, &out3Task_attributes);
 	
 	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_TIM_Base_Start_IT(&htim3);
@@ -139,8 +77,7 @@ uint32_t application_init(void)
 
 void AnalogTask(void *argument)
 {
-//	relay_outputs_selftest();
-	parametrize_overcurrent_protection();
+	parametrize_protection();
 	
 	uint16_t counter = 0;
 	
@@ -183,12 +120,17 @@ void AnalogTask(void *argument)
 	GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
 	
 	complex_t complex_tmp[3];
-	float temp;
+	size_t output_delay = 0;
+	GPIO_PinState prev_pin_state = GPIO_PIN_RESET;
+	GPIO_PinState pin_state = GPIO_PIN_RESET;
+	float temp = 0;
 	
 	while (true)
 	{
 		// Wait for the conversion complete signal (set by GPIO ISR)
 		osThreadFlagsWait(ADC_BUSY_FLAG, osFlagsWaitAny, osWaitForever);
+		
+
 		
 		// Read conversion results
 		ads8686s_read_channels(&ads8686s, conversion_buffer);
@@ -213,9 +155,6 @@ void AnalogTask(void *argument)
 			dft_step(&fourier_transform_arr[i * 2 + 1], ring_buffer_tmp);
 		}
 		
-//		serialize_voltages(voltage_buffer, serialized_voltages_tmp, CHANNEL_COUNT / 2);
-//		udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, serialized_voltages_tmp, sizeof(serialized_voltages_tmp));
-		
 		complex_tmp[0].real = VTOC(real_arr[0][1]);
 		complex_tmp[0].imag = VTOC(imag_arr[0][1]);
 		ansi51_element.current[0] = complex_tmp[0];
@@ -235,67 +174,67 @@ void AnalogTask(void *argument)
 		ANSI50_Step(&ansi50_element);
 		
 		dft_get_magnitude(&fourier_transform_arr[2], &temp, 1);
-		send_float_over_udp(temp);
+		send_float_over_udp(SEC2PRI(VTOC(temp))) ;
 		
+		ansi87b_element.current[0][0] = SEC2PRI(VTOC(real_arr[0][1]));
+		ansi87b_element.current[0][1] = SEC2PRI(VTOC(imag_arr[0][1]));
+		ansi87b_element.current[0][2] = SEC2PRI(VTOC(real_arr[2][1]));
+		ansi87b_element.current[0][3] = SEC2PRI(VTOC(imag_arr[2][1]));
+		ansi87b_element.current[0][4] = SEC2PRI(VTOC(real_arr[4][1]));
+		ansi87b_element.current[0][5] = SEC2PRI(VTOC(imag_arr[4][1]));
 		
-//		if (ansi51_element.is_tripped[0] || ansi51_element.is_tripped[1] || ansi51_element.is_tripped[2])
-//		{
-//			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
-//		}
-//		
-//		if (ansi50_element.is_tripped[0] || ansi50_element.is_tripped[1] || ansi50_element.is_tripped[2])
-//		{
-//			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
-//		}
+		ansi87b_element.current[1][0] = SEC2PRI(VTOC(real_arr[8][1]));
+		ansi87b_element.current[1][1] = SEC2PRI(VTOC(imag_arr[8][1]));
+		ansi87b_element.current[1][2] = SEC2PRI(VTOC(real_arr[10][1]));
+		ansi87b_element.current[1][3] = SEC2PRI(VTOC(imag_arr[10][1]));
+		ansi87b_element.current[1][4] = SEC2PRI(VTOC(real_arr[12][1]));
+		ansi87b_element.current[1][5] = SEC2PRI(VTOC(imag_arr[12][1]));
 		
-		ansi51_status = (ansi51_element.is_tripped[0] || ansi51_element.is_tripped[1] || ansi51_element.is_tripped[2]) ? 0x1 : 0x0;
-		ansi50_status = (ansi50_element.is_tripped[0] || ansi50_element.is_tripped[1] || ansi50_element.is_tripped[2]) ? 0x1 : 0x0;
+		ansi87b_element.current[2][0] = SEC2PRI(VTOC(real_arr[1][1]));
+		ansi87b_element.current[2][1] = SEC2PRI(VTOC(imag_arr[1][1]));
+		ansi87b_element.current[2][2] = SEC2PRI(VTOC(real_arr[3][1]));
+		ansi87b_element.current[2][3] = SEC2PRI(VTOC(imag_arr[3][1]));
+		ansi87b_element.current[2][4] = SEC2PRI(VTOC(real_arr[5][1]));
+		ansi87b_element.current[2][5] = SEC2PRI(VTOC(imag_arr[5][1]));
+		
+		ansi87b_element.current[3][0] = SEC2PRI(VTOC(real_arr[9][1]));
+		ansi87b_element.current[3][1] = SEC2PRI(VTOC(imag_arr[9][1]));
+		ansi87b_element.current[3][2] = SEC2PRI(VTOC(real_arr[11][1]));
+		ansi87b_element.current[3][3] = SEC2PRI(VTOC(imag_arr[11][1]));
+		ansi87b_element.current[3][4] = SEC2PRI(VTOC(real_arr[13][1]));
+		ansi87b_element.current[3][5] = SEC2PRI(VTOC(imag_arr[13][1]));
+		
+		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_SET);
+		ANSI87B_Step(&ansi87b_element);
+		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_RESET);
+		
+		pin_state = ansi87b_element.trip ? GPIO_PIN_SET : GPIO_PIN_RESET;
+		
+		if (ansi87b_element.trip)
+		{
+			HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_RESET);
+		}
+		
+		if (output_delay == 0)
+		{
+			if (prev_pin_state != pin_state)
+			{
+				HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, pin_state);
+				prev_pin_state = pin_state;
+				output_delay = 96;
+			}
+		}
+		else
+		{
+			output_delay--;
+		}
 		
 		// Wait for the timer interrupt to control the sampling rate
 		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
-	}
-}
-
-void OUT1Task(void *argument)
-{
-	GPIO_PinState prev_pin_state = GPIO_PIN_RESET;
-	GPIO_PinState pin_state = GPIO_PIN_RESET;
-	while (true)
-	{
-		pin_state = ansi50_status ? GPIO_PIN_SET : GPIO_PIN_RESET;
-		if (prev_pin_state != pin_state)
-		{
-			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, pin_state);
-			
-			if (prev_pin_state == GPIO_PIN_RESET)
-			{
-				osDelay(100);
-			}
-			
-			prev_pin_state = pin_state;
-		}
-	}
-}
-
-void OUT3Task(void *argument)
-{
-	GPIO_PinState prev_pin_state = GPIO_PIN_RESET;
-	GPIO_PinState pin_state = GPIO_PIN_RESET;
-	while (true)
-	{
-		pin_state = ansi51_status ? GPIO_PIN_SET : GPIO_PIN_RESET;
-		
-		if (prev_pin_state != pin_state)
-		{
-			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, pin_state);
-			
-			if (prev_pin_state == GPIO_PIN_RESET)
-			{
-				osDelay(100);
-			}
-			
-			prev_pin_state = pin_state;
-		}
 	}
 }
 
@@ -318,77 +257,6 @@ void BlinkTask(void *argument)
 	}
 }
 
-void GooseTask(void *argument)
-{
-	goose_publisher_init(&link_output);
-	
-	while (true)
-	{
-		osThreadFlagsWait(GOOSE_TASK_FLAG, osFlagsWaitAny, osWaitForever);
-		goose_publisher_process();
-	}
-}
-
-void InputMonitoringTask(void *argument)
-{
-	goose_handle* input_mon_goose_handle = goose_init(gnetif.hwaddr, destination, app_id);
-	
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.gocbref), (uint8_t*)gocbRef, strlen(gocbRef));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.dataset), (uint8_t*)dataset, strlen(dataset));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.go_id), (uint8_t*)go_id, strlen(go_id));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.time_allowed_to_live), (uint8_t*)&time_allowed_to_live, sizeof(time_allowed_to_live));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.t), (uint8_t*)&t, sizeof(t));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.st_num), (uint8_t*)&st_num, sizeof(st_num));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.sq_num), (uint8_t*)&sq_num, sizeof(sq_num));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.simulation), (uint8_t*)&simulation, sizeof(simulation));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.conf_rev), (uint8_t*)&conf_rev, sizeof(conf_rev));
-	ber_set(&(input_mon_goose_handle->frame->pdu_list.nds_com), (uint8_t*)&nds_com, sizeof(nds_com));
-		
-	for (size_t i = 0; i < 9; i++)
-	{
-		goose_all_data_entry_add(input_mon_goose_handle, 0x83, sizeof(input_status[i]), &(input_status[i]));
-	}
-	
-	input_mon_goose_params.default_time_allowed_to_live = 1000;
-	input_mon_goose_params.name = "inputMonitoring";
-	input_mon_goose_params.handle = input_mon_goose_handle;
-	
-	goose_publisher_register(input_mon_goose_params);
-	
-	uint8_t different_data_flag = 0;
-	uint8_t input_status_tmp[9] = { 0 };
-	
-	while (true)
-	{
-		input_status_tmp[0] = (HAL_GPIO_ReadPin(IN1_A_GPIO_Port, IN1_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[1] = (HAL_GPIO_ReadPin(IN2_A_GPIO_Port, IN2_A_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[2] = (HAL_GPIO_ReadPin(IN1_B_GPIO_Port, IN1_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[3] = (HAL_GPIO_ReadPin(IN2_B_GPIO_Port, IN2_B_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[4] = (HAL_GPIO_ReadPin(IN1_C_GPIO_Port, IN1_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[5] = (HAL_GPIO_ReadPin(IN2_C_GPIO_Port, IN2_C_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[6] = (HAL_GPIO_ReadPin(IN1_D_GPIO_Port, IN1_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[7] = (HAL_GPIO_ReadPin(IN2_D_GPIO_Port, IN2_D_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		input_status_tmp[8] = (HAL_GPIO_ReadPin(USER_BUTTON_GPIO_Port, USER_BUTTON_Pin) == GPIO_PIN_SET) ? 0x01 : 0x00;
-		
-		for (size_t i = 0; i < 9; i++)
-		{
-			if (input_status_tmp[i] != input_status[i])
-			{
-				goose_all_data_entry_modify(input_mon_goose_handle, i, 0x83, sizeof(input_status_tmp[i]), &(input_status_tmp[i]));
-				different_data_flag = 1;
-			}
-			
-			input_status[i] = input_status_tmp[i];
-		}
-		
-		if (different_data_flag)
-		{
-			goose_publisher_notify(input_mon_goose_params.name);
-			different_data_flag = 0;
-		}
-	}
-}
-
 // ISR or other function where the analog conversion is complete
 void application_adc_timing_flag_set(void)
 {
@@ -398,11 +266,6 @@ void application_adc_timing_flag_set(void)
 void application_adc_busy_flag_set(void)
 {
 	osThreadFlagsSet(analogTaskHandle, ADC_BUSY_FLAG); // Signal conversion complete
-}
-
-void application_goose_flag_set(void)
-{
-	osThreadFlagsSet(gooseTaskHandle, GOOSE_TASK_FLAG);
 }
 
 uint32_t application_analog_busy_semaphore_can_release(uint16_t GPIO_Pin)
@@ -450,46 +313,11 @@ void link_output(uint8_t* byte_stream, size_t length)
 	UNLOCK_TCPIP_CORE();
 }
 
-void parametrize_overcurrent_protection()
+void parametrize_protection()
 {
-	ANSI51_Init(&ansi51_element, 0.5f, 5.5f, 0.00104166666f, STANDARD_2, 1);
-	ANSI50_Init(&ansi50_element, 17);
-}
-
-void relay_outputs_selftest(void)
-{
-	HAL_GPIO_TogglePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT4_B_OUT_GPIO_Port, OUT4_B_OUT_Pin);
-	osDelay(500);
-	
-	HAL_GPIO_TogglePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin);
-	osDelay(200);
-	HAL_GPIO_TogglePin(OUT4_B_OUT_GPIO_Port, OUT4_B_OUT_Pin);
+	ANSI87B_Init(&ansi87b_element, 2e3f, 9e3f, 25e3f, 0.2f, 0.5f);
+//	ANSI51_Init(&ansi51_element, 0.5f, 5.5f, 0.00104166666f, STANDARD_2, 1);
+//	ANSI50_Init(&ansi50_element, 17);
 }
 
 void send_float_over_udp(float value)
