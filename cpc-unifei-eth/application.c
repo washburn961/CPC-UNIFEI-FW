@@ -6,9 +6,11 @@
 #define CHANNEL_COUNT 16
 #define SAMPLE_COUNT 16
 #define VTOC_RATIO 10.0f
-#define CTR 4000.0f / 5.0f
 #define VTOC(v) ((v) * VTOC_RATIO)
-#define SEC2PRI(i) ((i) * CTR)
+#define CTR0 600.0f / 5.0f
+#define CTR1 1500.0f / 5.0f
+#define CTR2 1000.0f / 5.0f
+#define CTR3 150.0f / 5.0f
 
 
 void AnalogTask(void *argument);
@@ -173,40 +175,38 @@ void AnalogTask(void *argument)
 		ANSI51_Step(&ansi51_element);
 		ANSI50_Step(&ansi50_element);
 		
-		dft_get_magnitude(&fourier_transform_arr[2], &temp, 1);
-		send_float_over_udp(SEC2PRI(VTOC(temp))) ;
+//		dft_get_magnitude(&fourier_transform_arr[2], &temp, 1);
+//		send_float_over_udp(SEC2PRI(VTOC(temp))) ;
 		
-		ansi87b_element.current[0][0] = SEC2PRI(VTOC(real_arr[0][1]));
-		ansi87b_element.current[0][1] = SEC2PRI(VTOC(imag_arr[0][1]));
-		ansi87b_element.current[0][2] = SEC2PRI(VTOC(real_arr[2][1]));
-		ansi87b_element.current[0][3] = SEC2PRI(VTOC(imag_arr[2][1]));
-		ansi87b_element.current[0][4] = SEC2PRI(VTOC(real_arr[4][1]));
-		ansi87b_element.current[0][5] = SEC2PRI(VTOC(imag_arr[4][1]));
+		ansi87b_element.current[0][0] = CTR0 * (VTOC(real_arr[0][1]));
+		ansi87b_element.current[0][1] = CTR0 * (VTOC(imag_arr[0][1]));
+		ansi87b_element.current[0][2] = CTR0 * (VTOC(real_arr[2][1]));
+		ansi87b_element.current[0][3] = CTR0 * (VTOC(imag_arr[2][1]));
+		ansi87b_element.current[0][4] = CTR0 * (VTOC(real_arr[4][1]));
+		ansi87b_element.current[0][5] = CTR0 * (VTOC(imag_arr[4][1]));
 		
-		ansi87b_element.current[1][0] = SEC2PRI(VTOC(real_arr[8][1]));
-		ansi87b_element.current[1][1] = SEC2PRI(VTOC(imag_arr[8][1]));
-		ansi87b_element.current[1][2] = SEC2PRI(VTOC(real_arr[10][1]));
-		ansi87b_element.current[1][3] = SEC2PRI(VTOC(imag_arr[10][1]));
-		ansi87b_element.current[1][4] = SEC2PRI(VTOC(real_arr[12][1]));
-		ansi87b_element.current[1][5] = SEC2PRI(VTOC(imag_arr[12][1]));
+		ansi87b_element.current[1][0] = CTR1 * (VTOC(real_arr[8][1]));
+		ansi87b_element.current[1][1] = CTR1 * (VTOC(imag_arr[8][1]));
+		ansi87b_element.current[1][2] = CTR1 * (VTOC(real_arr[10][1]));
+		ansi87b_element.current[1][3] = CTR1 * (VTOC(imag_arr[10][1]));
+		ansi87b_element.current[1][4] = CTR1 * (VTOC(real_arr[12][1]));
+		ansi87b_element.current[1][5] = CTR1 * (VTOC(imag_arr[12][1]));
 		
-		ansi87b_element.current[2][0] = SEC2PRI(VTOC(real_arr[1][1]));
-		ansi87b_element.current[2][1] = SEC2PRI(VTOC(imag_arr[1][1]));
-		ansi87b_element.current[2][2] = SEC2PRI(VTOC(real_arr[3][1]));
-		ansi87b_element.current[2][3] = SEC2PRI(VTOC(imag_arr[3][1]));
-		ansi87b_element.current[2][4] = SEC2PRI(VTOC(real_arr[5][1]));
-		ansi87b_element.current[2][5] = SEC2PRI(VTOC(imag_arr[5][1]));
+		ansi87b_element.current[2][0] = CTR2 * (VTOC(real_arr[1][1]));
+		ansi87b_element.current[2][1] = CTR2 * (VTOC(imag_arr[1][1]));
+		ansi87b_element.current[2][2] = CTR2 * (VTOC(real_arr[3][1]));
+		ansi87b_element.current[2][3] = CTR2 * (VTOC(imag_arr[3][1]));
+		ansi87b_element.current[2][4] = CTR2 * (VTOC(real_arr[5][1]));
+		ansi87b_element.current[2][5] = CTR2 * (VTOC(imag_arr[5][1]));
 		
-		ansi87b_element.current[3][0] = SEC2PRI(VTOC(real_arr[9][1]));
-		ansi87b_element.current[3][1] = SEC2PRI(VTOC(imag_arr[9][1]));
-		ansi87b_element.current[3][2] = SEC2PRI(VTOC(real_arr[11][1]));
-		ansi87b_element.current[3][3] = SEC2PRI(VTOC(imag_arr[11][1]));
-		ansi87b_element.current[3][4] = SEC2PRI(VTOC(real_arr[13][1]));
-		ansi87b_element.current[3][5] = SEC2PRI(VTOC(imag_arr[13][1]));
+		ansi87b_element.current[3][0] = CTR3 * (VTOC(real_arr[9][1]));
+		ansi87b_element.current[3][1] = CTR3 * (VTOC(imag_arr[9][1]));
+		ansi87b_element.current[3][2] = CTR3 * (VTOC(real_arr[11][1]));
+		ansi87b_element.current[3][3] = CTR3 * (VTOC(imag_arr[11][1]));
+		ansi87b_element.current[3][4] = CTR3 * (VTOC(real_arr[13][1]));
+		ansi87b_element.current[3][5] = CTR3 * (VTOC(imag_arr[13][1]));
 		
-		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_SET);
 		ANSI87B_Step(&ansi87b_element);
-		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_RESET);
 		
 		pin_state = ansi87b_element.trip ? GPIO_PIN_SET : GPIO_PIN_RESET;
 		
@@ -315,7 +315,13 @@ void link_output(uint8_t* byte_stream, size_t length)
 
 void parametrize_protection()
 {
-	ANSI87B_Init(&ansi87b_element, 2e3f, 9e3f, 25e3f, 0.2f, 0.5f);
+	
+	float ipk = 2000;
+	float maxpu = 9000;
+	float x1 = 25000;
+	float m1 = 0.2;
+	float m2 = 0.5;
+	ANSI87B_Init(&ansi87b_element, ipk, maxpu, x1, m1, m2);
 //	ANSI51_Init(&ansi51_element, 0.5f, 5.5f, 0.00104166666f, STANDARD_2, 1);
 //	ANSI50_Init(&ansi50_element, 17);
 }
