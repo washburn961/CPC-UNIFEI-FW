@@ -312,10 +312,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-	if (htim->Instance == TIM2)
-	{
-		application_goose_flag_set();
-	}
 	
 	if (htim->Instance == TIM3)
 	{
