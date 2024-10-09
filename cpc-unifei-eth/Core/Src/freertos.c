@@ -30,6 +30,7 @@
 #include "udp_server.h"
 #include <string.h>
 #include "application.h"
+#include "real_time.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,6 +68,7 @@ const osThreadAttr_t defaultTask_attributes = {
 void StartDefaultTask(void *argument);
 
 extern void MX_LWIP_Init(void);
+extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* Hook prototypes */
@@ -92,7 +94,7 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-	application_init();
+	
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -136,6 +138,9 @@ void StartDefaultTask(void *argument)
 {
   /* init code for LWIP */
   MX_LWIP_Init();
+
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartDefaultTask */
 	/* ETH_CODE: Adding lwiperf to measure TCP/IP performance.
 	     * iperf 2.0.6 (or older?) is required for the tests. Newer iperf2 versions
@@ -145,7 +150,10 @@ void StartDefaultTask(void *argument)
 	     * The default include path should already contain
 	     * 'lwip/apps/lwiperf.h'
 	     */
+	osDelay(1000);
 	udp_server_init();
+	application_init();
+	real_time_init();
 
 	/* Infinite loop */
 	for (;;)

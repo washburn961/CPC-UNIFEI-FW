@@ -1,8 +1,8 @@
-#include "fourier_transform.h"
+#include "dft.h"
 
 #define ONE_OVER_SQRT2 0.70710678118
 
-uint32_t dft_init(fourier_transform* transform) {
+uint32_t dft_init(dft* transform) {
 	uint32_t ret = 0;
 
 	for (uint32_t i = 0; i < transform->size; i++)
@@ -23,7 +23,7 @@ uint32_t dft_init(fourier_transform* transform) {
 	return ret;
 }
 
-uint32_t dft_step(fourier_transform* transform, float* input) {
+uint32_t dft_step(dft* transform, float* input) {
 	uint32_t ret = 0;
 
 	for (uint32_t h = 0; h < transform->size; h++)
@@ -37,14 +37,14 @@ uint32_t dft_step(fourier_transform* transform, float* input) {
 			imag += input[n] * transform->sin[h * transform->size + n];
 		}
 
-		transform->real[h] = (2 * real / transform->size) * ONE_OVER_SQRT2;
-		transform->imag[h] = (-2 * imag / transform->size) * ONE_OVER_SQRT2;
+		transform->real[h] = 2 * real / transform->size;
+		transform->imag[h] = 2 * imag / transform->size;
 	}
 
 	return ret;
 }
 
-uint32_t dft_get_magnitude(fourier_transform* transform, float* out_magnitude, uint32_t index) {
+uint32_t dft_get_magnitude(dft* transform, float* out_magnitude, uint32_t index) {
 	uint32_t ret = 0;
 
 	if (index >= transform->size) return 1;
@@ -54,7 +54,7 @@ uint32_t dft_get_magnitude(fourier_transform* transform, float* out_magnitude, u
 	return ret;
 }
 
-uint32_t dft_get_phase(fourier_transform* transform, float* out_phase, uint32_t index) {
+uint32_t dft_get_phase(dft* transform, float* out_phase, uint32_t index) {
 	uint32_t ret = 0;
 
 	if (index >= transform->size) return 1; // Check bounds
