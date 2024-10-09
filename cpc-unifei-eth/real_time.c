@@ -8,9 +8,9 @@
 #include "gpio.h"
 #include "debug.h"
 
-#define SAMPLING_RATE_CONTROL_FLAG 0x0001
-#define ADC_BUSY_FLAG 0x0002
-#define GOOSE_TASK_FLAG 0x0003
+#define SAMPLING_RATE_CONTROL_FLAG 1
+#define ADC_BUSY_FLAG 2
+#define GOOSE_TASK_FLAG 3
 
 struct ads8686s_device ads8686s;
 struct ads8686s_conversion_result conversion_buffer[CHANNEL_COUNT / 2];
@@ -115,10 +115,7 @@ void execute_signal_processing(void)
 {
 	for (size_t i = 0; i < (CHANNEL_COUNT / 2); i++)
 	{
-		analog_channel channel_a = 2 * i;
-		analog_channel channel_b = 2 * i + 1;
-		
-		signal_processing_step(channel_a, conversion_buffer[i].channel_a);
-		signal_processing_step(channel_b, conversion_buffer[i].channel_b);
+		signal_processing_step((analog_channel)(2 * i), conversion_buffer[i].channel_a);
+		signal_processing_step((analog_channel)(2 * i + 1), conversion_buffer[i].channel_b);
 	}
 }
