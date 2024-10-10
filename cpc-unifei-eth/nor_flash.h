@@ -1,9 +1,17 @@
 #pragma once
 
+#include <stdint.h>
+#include <stddef.h>
+
 #define SET_BIT(REG, BIT)    ((REG) |= (BIT))
 #define RESET_BIT(REG, BIT)  ((REG) &= ~(BIT))
 #define CHECK_BIT(REG, BIT)  ((REG) & (BIT))
 #define CHECK_BIT_CLR(REG, BIT)  (!((REG) & (BIT)))
+
+#define PAGE_SIZE 256
+#define SECTOR_SIZE 4096
+#define BLOCK_SIZE (16 * SECTOR_SIZE)
+#define MEMORY_SIZE (SECTOR_SIZE * 2048)
 
 // Status Register Bit Definitions
 #define STSREG_WIP        (1 << 0)  // Write In Progress (WIP) bit
@@ -39,12 +47,23 @@
 #define INST_RST				0x99 // Reset
 #define INST_WREN				0x06 // Write Enable
 #define INST_RDSR				0x05 // Read Status Register
+#define INST_WRSR				0x01 // Write Status Register
+#define INST_QPIEN				0x35 // Enter Quad Peripheral Interface
+#define INST_PP					0x02 // Page Program Operation
+#define INST_SRP				0xC0 // Set Read Parameters Operation
+#define INST_FRD				0x0B // Fast Read Operation
+#define INST_SER				0x20 // Sector Erase Operation
 
 typedef enum
 {
-	spi  = 0,
-	qspi = 1
+	SPI  = 0,
+	QSPI = 1
 } io_mode;
 
-void is25lp064a_init(void);
-void is25lp064a_reset(io_mode mode);
+extern volatile uint8_t* base_address;
+extern io_mode current_io_mode;
+extern io_mode current_inst_mode;
+void nor_flash_init(void);
+void nor_flash_write(uint32_t address, uint8_t* data, size_t len);
+void nor_flash_read(uint32_t address, uint8_t* data, size_t len);
+void nor_flash_reset(void);

@@ -24,30 +24,7 @@
     </VisualWatchPreferences>
     <MaskInterruptsWhileStepping>false</MaskInterruptsWhileStepping>
     <MemoryWindowPreferences />
-    <b>
-      <p5>
-        <g>voltages</g>
-        <a>true</a>
-        <h>
-          <ComparisonMode>Equals</ComparisonMode>
-          <Enabled>false</Enabled>
-        </h>
-        <e>false</e>
-        <f>false</f>
-        <d>false</d>
-      </p5>
-      <p5>
-        <g>voltages</g>
-        <a>true</a>
-        <h>
-          <ComparisonMode>Equals</ComparisonMode>
-          <Enabled>false</Enabled>
-        </h>
-        <e>false</e>
-        <f>false</f>
-        <d>false</d>
-      </p5>
-    </b>
+    <b />
     <c>
       <a>
         <a>com.sysprogs.AllGlobals</a>
@@ -63,7 +40,7 @@
       </a>
     </c>
     <e>
-      <b>SpecificVariables</b>
+      <b>Custom</b>
       <a>false</a>
     </e>
     <Suggestions />

@@ -17,8 +17,6 @@ add_bsp_based_executable(
 		${BSP_ROOT}/udp_server.c
 		${BSP_ROOT}/application.c
 		${BSP_ROOT}/application.h
-		${BSP_ROOT}/ads8686s_low_level.h
-		${BSP_ROOT}/ads8686s_low_level.c
 		${BSP_ROOT}/phasorfilters/inc/cosine_filter.h
 		${BSP_ROOT}/phasorfilters/inc/dft.h
 		${BSP_ROOT}/phasorfilters/inc/half_cycle_fourier_transform.h
@@ -46,8 +44,8 @@ add_bsp_based_executable(
 		${BSP_ROOT}/power-system-protection/src/include/ANSI51.h
 		${BSP_ROOT}/power-system-protection/src/include/cpc_complex.h
 		${BSP_ROOT}/power-system-protection/src/cpc_complex.c
-		${BSP_ROOT}/is25lp064a.c
-		${BSP_ROOT}/is25lp064a.h
+		${BSP_ROOT}/nor_flash.c
+		${BSP_ROOT}/nor_flash.h
 		${BSP_ROOT}/USBDEVICE/USB_DEVICE/App/usbd_cdc_if.h
 		${BSP_ROOT}/USBDEVICE/USB_DEVICE/App/usbd_desc.h
 		${BSP_ROOT}/USBDEVICE/USB_DEVICE/App/usb_device.h
@@ -64,4 +62,4 @@ add_bsp_based_executable(
 		${BSP_ROOT}/signal_processing.c
 		${BSP_ROOT}/config.c)
 target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc ../../../iec61850/iec61850 iec61850 iec61850 power-system-protection/src/include src/include src/include src/include)
-set_source_files_properties(${BSP_ROOT}/src/include/ANSI67.h ${BSP_ROOT}/src/include/ANSI21.h ${BSP_ROOT}/src/include/ANSI50.h ${BSP_ROOT}/goose.h ${BSP_ROOT}/goose.c ${BSP_ROOT}/lua-5.4.7/src/lua.c ${BSP_ROOT}/lua-5.4.7/src/luac.c PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${BSP_ROOT}/ads8686s_low_level.c ${BSP_ROOT}/ads8686s_low_level.h ${BSP_ROOT}/lua-5.4.7/lua-5.4.7/src/luac.c ${BSP_ROOT}/lua-5.4.7/lua-5.4.7/src/lua.c ${BSP_ROOT}/src/include/ANSI67.h ${BSP_ROOT}/src/include/ANSI21.h ${BSP_ROOT}/src/include/ANSI50.h ${BSP_ROOT}/goose.h ${BSP_ROOT}/goose.c ${BSP_ROOT}/lua-5.4.7/src/lua.c ${BSP_ROOT}/lua-5.4.7/src/luac.c PROPERTIES HEADER_FILE_ONLY TRUE)

@@ -115,7 +115,7 @@ void execute_signal_processing(void)
 {
 	for (size_t i = 0; i < (CHANNEL_COUNT / 2); i++)
 	{
-		signal_processing_step((analog_channel)(2 * i), conversion_buffer[i].channel_a);
-		signal_processing_step((analog_channel)(2 * i + 1), conversion_buffer[i].channel_b);
+		signal_processing_step((analog_channel)(2 * i), (conversion_buffer[i].channel_a * ads8686s.lsb));
+		signal_processing_step((analog_channel)(2 * i + 1), (conversion_buffer[i].channel_b * ads8686s.lsb));
 	}
 }
