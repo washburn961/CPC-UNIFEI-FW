@@ -44,12 +44,12 @@ void application_task(void *argument)
 	
 	while (true)
 	{
-		application_take();
+//		application_take();
 		
 		HAL_GPIO_TogglePin(USER_LED0_GPIO_Port, USER_LED0_Pin);
 		osDelay(500);
 		
-		application_release();
+//		application_release();
 	}
 }
 

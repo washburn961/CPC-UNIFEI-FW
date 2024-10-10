@@ -31,6 +31,8 @@
 #include <string.h>
 #include "application.h"
 #include "real_time.h"
+#include "config.h"
+#include "nor_flash.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -133,6 +135,7 @@ void MX_FREERTOS_Init(void) {
   * @param  argument: Not used
   * @retval None
   */
+general_config default_config = { 0 };
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
@@ -151,9 +154,24 @@ void StartDefaultTask(void *argument)
 	     * 'lwip/apps/lwiperf.h'
 	     */
 	osDelay(1000);
+		
+	default_config.header.magic_number = CONFIG_MAGIC_NUMBER;
+	default_config.header.uid = 0xdeadbeef;
+	default_config.header.version = CONFIG_VERSION;
+	default_config.analog.channel_0a.adc_to_sec_ratio = 10;
+	default_config.analog.channel_0a.filter = DFT;
+	default_config.analog.channel_0a.is_enabled = true;
+	default_config.analog.channel_0a.itr_ratio = 800;
+	default_config.analog.channel_0a.type = CURRENT;
+	
 	udp_server_init();
 	application_init();
 	real_time_init();
+	nor_flash_init();
+	if (!config_restore())
+	{
+		config_set(&default_config);
+	}
 
 	/* Infinite loop */
 	for (;;)
@@ -165,29 +183,6 @@ void StartDefaultTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-///* Function to send the temperature over UDP */
-//
-//uint32_t temp_counts = 0;
-//float temp = 0;
-//uint16_t *TS_CAL1 = (uint16_t *)0x1FF1E820;
-//uint16_t *TS_CAL2 = (uint16_t *)0x1FF1E840;
-//	
-//void TemperatureTask(void *argument)
-//{
-//	HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
-//	
-//	for (;;)
-//	{
-//		HAL_ADC_Start(&hadc3);
-//		HAL_ADC_PollForConversion(&hadc3, 100);
-//		temp = ((double)(80.0)) / ((double)(*TS_CAL2 - *TS_CAL1)) * (((double)(HAL_ADC_GetValue(&hadc3))) - ((double)*TS_CAL1)) + ((double)30.0);
-//		HAL_ADC_Stop(&hadc3);
-//		
-//		// Send the temperature over UDP
-//		SendTemperatureUDP(temp);
-//		
-//		osDelay(500);
-//	}
-//}
+
 /* USER CODE END Application */
 

@@ -2,7 +2,9 @@
 #include "octospi.h"
 #include <stdio.h>
 #include "debug.h"
+#include <stdbool.h>
 
+bool is_init = false;
 volatile uint8_t* base_address;
 io_mode current_io_mode = SPI;
 io_mode current_inst_mode = SPI;
@@ -22,7 +24,15 @@ void nor_flash_init(void)
 	configure_fast_read_dummy_cycles();
     
 	base_address = (uint8_t*)OCTOSPI1_BASE;
+	
+	is_init = true;
+	
 	DEBUG_INFO("%s", "EXTERNAL FLASH: INIT DONE\r\n");
+}
+
+bool nor_flash_is_init(void)
+{
+	return is_init;
 }
 
 void nor_flash_reset(void)

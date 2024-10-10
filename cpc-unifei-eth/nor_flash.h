@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #define SET_BIT(REG, BIT)    ((REG) |= (BIT))
 #define RESET_BIT(REG, BIT)  ((REG) &= ~(BIT))
@@ -63,6 +64,7 @@ typedef enum
 extern volatile uint8_t* base_address;
 extern io_mode current_io_mode;
 extern io_mode current_inst_mode;
+extern bool nor_flash_is_init(void);
 void nor_flash_init(void);
 void nor_flash_write(uint32_t address, uint8_t* data, size_t len);
 void nor_flash_read(uint32_t address, uint8_t* data, size_t len);

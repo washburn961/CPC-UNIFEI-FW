@@ -48,7 +48,7 @@ void real_time_task(void *argument)
 	
 	while (1)
 	{
-		real_time_take();
+//		real_time_take();
 		
 		// Wait for the conversion complete signal (set by GPIO ISR)
 		osThreadFlagsWait(ADC_BUSY_FLAG, osFlagsWaitAny, osWaitForever);
@@ -65,7 +65,7 @@ void real_time_task(void *argument)
 		
 		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
 		
-		real_time_release();
+//		real_time_release();
 	}
 }
 

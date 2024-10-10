@@ -6,7 +6,9 @@
 #define CHANNEL_COUNT 16
 #define SAMPLE_COUNT 16
 #define BAY_COUNT 5
+#define CONFIG_FLASH_SECTOR 0x0
 #define CONFIG_MAGIC_NUMBER ((uint32_t)0xDEADBEEF)
+#define CONFIG_VERSION 0xAA
 
 // Analog channel definitions, enforcing uint8_t type
 #define CHANNEL_0A  ((uint8_t)0)
@@ -90,6 +92,7 @@ typedef struct
 typedef struct
 {
 	uint32_t magic_number;
+	uint32_t uid;
 	uint8_t version;
 	uint32_t date;
 	uint8_t reserved[4];
@@ -105,5 +108,5 @@ typedef struct
 
 extern bool config_is_set;
 void config_set(general_config* config);
-void config_get(general_config* out_config);
-void config_restore(void);
+void config_get(general_config** out_config);
+bool config_restore(void);
