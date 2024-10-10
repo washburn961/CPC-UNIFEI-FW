@@ -6,6 +6,7 @@
 #define CHANNEL_COUNT 16
 #define SAMPLE_COUNT 16
 #define BAY_COUNT 5
+#define CONFIG_MAGIC_NUMBER ((uint32_t)0xDEADBEEF)
 
 // Analog channel definitions, enforcing uint8_t type
 #define CHANNEL_0A  ((uint8_t)0)
@@ -88,6 +89,15 @@ typedef struct
 
 typedef struct
 {
+	uint32_t magic_number;
+	uint8_t version;
+	uint32_t date;
+	uint8_t reserved[4];
+} __attribute__((packed)) general_config_header;
+
+typedef struct
+{
+	general_config_header header;
 	analog_config analog;
 	ansi50_config ansi50[BAY_COUNT];
 	ansi51_config ansi51[BAY_COUNT];
