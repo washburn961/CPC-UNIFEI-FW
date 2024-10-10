@@ -2,7 +2,7 @@
 #include "ring_buffer.h"
 #include "dft.h"
 
-typedef void(*phasor_filter_execute)(analog_channel channel, float input);
+typedef void(*phasor_filter_execute)(uint8_t channel, float input);
 
 typedef struct
 {
@@ -22,10 +22,10 @@ processing_channel channels[CHANNEL_COUNT] = { 0 };
 float sin_coef[SAMPLE_COUNT * SAMPLE_COUNT] = { 0 };
 float cos_coef[SAMPLE_COUNT * SAMPLE_COUNT] = { 0 };
 
-float apply_ratios(analog_channel channel, float input);
-void dft_execute(analog_channel channel, float input);
+float apply_ratios(uint8_t channel, float input);
+void dft_execute(uint8_t channel, float input);
 
-void signal_processing_channel_config(analog_channel channel, analog_channel_config* config)
+void signal_processing_channel_config(uint8_t channel, analog_channel_config* config)
 {
 	processing_channel_internals* channel_internals = &(internals[channel]);
 	
@@ -52,7 +52,7 @@ void signal_processing_channel_config(analog_channel channel, analog_channel_con
 	}
 }
 
-void signal_processing_step(analog_channel channel, float input)
+void signal_processing_step(uint8_t channel, float input)
 {
 	if ((channels[channel].config == NULL) || (channels[channel].config->is_enabled == false)) return;
 	
@@ -63,28 +63,28 @@ void signal_processing_step(analog_channel channel, float input)
 	channel_internals->filter_exec(channel, channel_internals->last_value);
 }
 
-void signal_processing_raw_get(analog_channel channel, float* out)
+void signal_processing_raw_get(uint8_t channel, float* out)
 {
 	processing_channel_internals* channel_internals = &(internals[channel]);
 	*out = channel_internals->last_value;
 }
-void signal_processing_real_get(analog_channel channel, size_t index, float* out)
+void signal_processing_real_get(uint8_t channel, size_t index, float* out)
 {
 	processing_channel_internals* channel_internals = &(internals[channel]);
 	*out = channel_internals->real[index];
 }
-void signal_processing_imag_get(analog_channel channel, size_t index, float* out)
+void signal_processing_imag_get(uint8_t channel, size_t index, float* out)
 {
 	processing_channel_internals* channel_internals = &(internals[channel]);
 	*out = channel_internals->imag[index];
 }
 
-float apply_ratios(analog_channel channel, float input)
+float apply_ratios(uint8_t channel, float input)
 {
 	return input * (channels[channel].config->adc_to_sec_ratio) * (channels[channel].config->itr_ratio);
 }
 
-void dft_execute(analog_channel channel, float input)
+void dft_execute(uint8_t channel, float input)
 {
 	processing_channel_internals* channel_internals = &(internals[channel]);
 	

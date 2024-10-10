@@ -14,6 +14,10 @@
 
 struct ads8686s_device ads8686s;
 struct ads8686s_conversion_result conversion_buffer[CHANNEL_COUNT / 2];
+osMutexId_t real_time_mutex_handle;
+const osMutexAttr_t real_time_mutex_attributes = {
+	.name = "real_time_mutex"
+};
 osThreadId_t real_time_task_handle;
 const osThreadAttr_t real_time_task_attributes = {
 	.name = "real_time_task",
@@ -27,6 +31,7 @@ void execute_signal_processing(void);
 
 void real_time_init(void)
 {
+	real_time_mutex_handle = osMutexNew(&real_time_mutex_attributes);
 	real_time_task_handle = osThreadNew(real_time_task, NULL, &real_time_task_attributes);
 	
 	HAL_TIM_Base_Start_IT(&htim2);
@@ -43,6 +48,8 @@ void real_time_task(void *argument)
 	
 	while (1)
 	{
+		real_time_take();
+		
 		// Wait for the conversion complete signal (set by GPIO ISR)
 		osThreadFlagsWait(ADC_BUSY_FLAG, osFlagsWaitAny, osWaitForever);
 		
@@ -57,6 +64,8 @@ void real_time_task(void *argument)
 		GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
 		
 		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
+		
+		real_time_release();
 	}
 }
 
@@ -115,7 +124,17 @@ void execute_signal_processing(void)
 {
 	for (size_t i = 0; i < (CHANNEL_COUNT / 2); i++)
 	{
-		signal_processing_step((analog_channel)(2 * i), (conversion_buffer[i].channel_a * ads8686s.lsb));
-		signal_processing_step((analog_channel)(2 * i + 1), (conversion_buffer[i].channel_b * ads8686s.lsb));
+		signal_processing_step((uint8_t)(2 * i), (conversion_buffer[i].channel_a * ads8686s.lsb));
+		signal_processing_step((uint8_t)(2 * i + 1), (conversion_buffer[i].channel_b * ads8686s.lsb));
 	}
+}
+
+void real_time_take(void)
+{
+	osMutexAcquire(real_time_mutex_handle, osWaitForever);
+}
+
+void real_time_release(void)
+{
+	osMutexRelease(real_time_mutex_handle);
 }

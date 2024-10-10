@@ -7,48 +7,42 @@
 #define SAMPLE_COUNT 16
 #define BAY_COUNT 5
 
-typedef enum
-{
-	CHANNEL_0A = 0,
-	CHANNEL_0B = 1,
-	CHANNEL_1A = 2,
-	CHANNEL_1B = 3,
-	CHANNEL_2A = 4,
-	CHANNEL_2B = 5,
-	CHANNEL_3A = 6,
-	CHANNEL_3B = 7,
-	CHANNEL_4A = 8,
-	CHANNEL_4B = 9,
-	CHANNEL_5A = 10,
-	CHANNEL_5B = 11,
-	CHANNEL_6A = 12,
-	CHANNEL_6B = 13,
-	CHANNEL_7A = 14,
-	CHANNEL_7B = 15,
-} analog_channel;
+// Analog channel definitions, enforcing uint8_t type
+#define CHANNEL_0A  ((uint8_t)0)
+#define CHANNEL_0B  ((uint8_t)1)
+#define CHANNEL_1A  ((uint8_t)2)
+#define CHANNEL_1B  ((uint8_t)3)
+#define CHANNEL_2A  ((uint8_t)4)
+#define CHANNEL_2B  ((uint8_t)5)
+#define CHANNEL_3A  ((uint8_t)6)
+#define CHANNEL_3B  ((uint8_t)7)
+#define CHANNEL_4A  ((uint8_t)8)
+#define CHANNEL_4B  ((uint8_t)9)
+#define CHANNEL_5A  ((uint8_t)10)
+#define CHANNEL_5B  ((uint8_t)11)
+#define CHANNEL_6A  ((uint8_t)12)
+#define CHANNEL_6B  ((uint8_t)13)
+#define CHANNEL_7A  ((uint8_t)14)
+#define CHANNEL_7B  ((uint8_t)15)
 
-typedef enum
-{
-	VOLTAGE = 0,
-	CURRENT = 1
-} analog_channel_type;
+// Analog channel type definitions, enforcing uint8_t type
+#define VOLTAGE     ((uint8_t)0)
+#define CURRENT     ((uint8_t)1)
 
-typedef enum
-{
-	DFT = 0,
-	HCDFT = 1,
-	DST = 2,
-	DCT = 3
-} phasor_filter_type;
+// Phasor filter type definitions, enforcing uint8_t type
+#define DFT         ((uint8_t)0)
+#define HCDFT       ((uint8_t)1)
+#define DST         ((uint8_t)2)
+#define DCT         ((uint8_t)3)
 
 typedef struct
 {
 	bool is_enabled;
-	analog_channel_type type;
-	phasor_filter_type filter;
+	uint8_t type;
+	uint8_t filter;
 	float adc_to_sec_ratio;
 	float itr_ratio;
-} analog_channel_config;
+} __attribute__((packed)) analog_channel_config;
 
 typedef struct
 {
@@ -68,38 +62,38 @@ typedef struct
 	analog_channel_config channel_5b;
 	analog_channel_config channel_6b;
 	analog_channel_config channel_7b;
-} analog_config;
+} __attribute__((packed)) analog_config;
 
 typedef struct
 {
 	bool is_enabled;
-	analog_channel phase_a_channel;
-	analog_channel phase_b_channel;
-	analog_channel phase_c_channel;
+	uint8_t phase_a_channel;
+	uint8_t phase_b_channel;
+	uint8_t phase_c_channel;
 	float pick_up;
-} ansi50_config;
+} __attribute__((packed)) ansi50_config;
 
 typedef struct
 {
 	bool is_enabled;
-	analog_channel phase_a_channel;
-	analog_channel phase_b_channel;
-	analog_channel phase_c_channel;
+	uint8_t phase_a_channel;
+	uint8_t phase_b_channel;
+	uint8_t phase_c_channel;
 	float pick_up;
 	float time_dial;
 	float a;
 	float b;
 	float c;
-} ansi51_config;
+} __attribute__((packed)) ansi51_config;
 
 typedef struct
 {
 	analog_config analog;
 	ansi50_config ansi50[BAY_COUNT];
 	ansi51_config ansi51[BAY_COUNT];
-} general_config;
+} __attribute__((packed)) general_config;
 
 extern bool config_is_set;
-void config_set(general_config* configs);
-void config_get(general_config* out_configs);
+void config_set(general_config* config);
+void config_get(general_config* out_config);
 void config_restore(void);

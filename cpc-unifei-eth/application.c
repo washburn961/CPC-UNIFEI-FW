@@ -22,6 +22,10 @@
 
 void application_task(void *argument);
 
+osMutexId_t application_mutex_handle;
+const osMutexAttr_t application_mutex_attributes = {
+	.name = "application_mutex"
+};
 osThreadId_t application_task_handle;
 const osThreadAttr_t application_task_attributes = {
 	.name = "application_task",
@@ -31,6 +35,7 @@ const osThreadAttr_t application_task_attributes = {
 
 void application_init(void)
 {
+	application_mutex_handle = osMutexNew(&application_mutex_attributes);
 	application_task_handle = osThreadNew(application_task, NULL, &application_task_attributes);
 }
 
@@ -39,7 +44,20 @@ void application_task(void *argument)
 	
 	while (true)
 	{
+		application_take();
+		
 		HAL_GPIO_TogglePin(USER_LED0_GPIO_Port, USER_LED0_Pin);
 		osDelay(500);
+		
+		application_release();
 	}
+}
+
+void application_take(void)
+{
+	osMutexAcquire(application_mutex_handle, osWaitForever);
+}
+void application_release(void)
+{
+	osMutexRelease(application_mutex_handle);
 }
