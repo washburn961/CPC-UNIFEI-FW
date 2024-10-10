@@ -41,7 +41,7 @@ osThreadId_t goose_task_handle;
 const osThreadAttr_t goose_task_attributes = {
 	.name = "goose_task",
 	.stack_size = 512 * 4,
-	.priority = (osPriority_t) osPriorityHigh,
+	.priority = (osPriority_t) osPriorityNormal,
 };
 
 void application_init(void)
@@ -60,13 +60,16 @@ void application_task(void *argument)
 	}
 }
 
+goose_message_params input_mon_goose_params;
+goose_handle* input_mon_goose_handle;
+
 void goose_task(void* argument)
 {
 	uint8_t button_status = 0x0;
 	uint8_t prev_button_status = 0x0;
 	
-	goose_message_params input_mon_goose_params;
-	goose_handle* input_mon_goose_handle = goose_init(gnetif.hwaddr, destination, app_id);
+	goose_publisher_init(&link_output);
+	input_mon_goose_handle = goose_init(gnetif.hwaddr, destination, app_id);
 	
 	ber_set(&(input_mon_goose_handle->frame->pdu_list.gocbref), (uint8_t*)gocbRef, strlen(gocbRef));
 	ber_set(&(input_mon_goose_handle->frame->pdu_list.dataset), (uint8_t*)dataset, strlen(dataset));
@@ -88,7 +91,6 @@ void goose_task(void* argument)
 	input_mon_goose_params.name = "inputMonitoring";
 	input_mon_goose_params.handle = input_mon_goose_handle;
 	
-	goose_publisher_init(&link_output);
 	goose_publisher_register(input_mon_goose_params);
 	
 	while (true)
@@ -137,6 +139,7 @@ void link_output(uint8_t* byte_stream, size_t length)
 	// Send the pbuf using the linkoutput function
 	if (gnetif.linkoutput(&gnetif, p) != ERR_OK) {
 		// Handle send error
+		printf("ERRO");
 	}
 
 	// Free the pbuf
