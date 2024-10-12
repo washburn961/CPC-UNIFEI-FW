@@ -80,40 +80,40 @@ void real_time_init(void)
 	test_config.header.uid = 0xdeadbeee;
 	test_config.header.version = CONFIG_VERSION;
 	
-	test_config.analog.channel_0a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_0a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_0a.filter = DFT;
 	test_config.analog.channel_0a.is_enabled = true;
-	test_config.analog.channel_0a.itr_ratio = 1;
+	test_config.analog.channel_0a.itr_ratio = 200;
 	test_config.analog.channel_0a.type = CURRENT;
 	
-	test_config.analog.channel_1a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_1a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_1a.filter = DFT;
 	test_config.analog.channel_1a.is_enabled = true;
-	test_config.analog.channel_1a.itr_ratio = 1;
+	test_config.analog.channel_1a.itr_ratio = 200;
 	test_config.analog.channel_1a.type = CURRENT;
 	
-	test_config.analog.channel_2a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_2a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_2a.filter = DFT;
 	test_config.analog.channel_2a.is_enabled = true;
-	test_config.analog.channel_2a.itr_ratio = 1;
+	test_config.analog.channel_2a.itr_ratio = 200;
 	test_config.analog.channel_2a.type = CURRENT;
 	
-	test_config.analog.channel_4a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_4a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_4a.filter = DFT;
 	test_config.analog.channel_4a.is_enabled = true;
-	test_config.analog.channel_4a.itr_ratio = 1;
+	test_config.analog.channel_4a.itr_ratio = 200;
 	test_config.analog.channel_4a.type = CURRENT;
 	
-	test_config.analog.channel_5a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_5a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_5a.filter = DFT;
 	test_config.analog.channel_5a.is_enabled = true;
-	test_config.analog.channel_5a.itr_ratio = 1;
+	test_config.analog.channel_5a.itr_ratio = 200;
 	test_config.analog.channel_5a.type = CURRENT;
 	
-	test_config.analog.channel_6a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_6a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_6a.filter = DFT;
 	test_config.analog.channel_6a.is_enabled = true;
-	test_config.analog.channel_6a.itr_ratio = 1;
+	test_config.analog.channel_6a.itr_ratio = 200;
 	test_config.analog.channel_6a.type = CURRENT;
 	
 	ansi87t.pkp = 0.3;
@@ -156,6 +156,9 @@ void real_time_task(void *argument)
 		// Read conversion results
 		ads8686s_read_channels(&ads8686s, conversion_buffer);
 		
+		GPIOD->BSRR = GPIO_PIN_12;
+		GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
+		
 		// Do stuff here as needed
 		execute_signal_processing();
 		
@@ -187,13 +190,11 @@ void real_time_task(void *argument)
 		
 		generate_and_send_magnitude_string();
 		
-		// Pulse GPIO to start the next conversion
-		GPIOD->BSRR = GPIO_PIN_12;
-		GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
-		
 		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_RESET);
 		
 		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
+		
+		// Pulse GPIO to start the next conversion
 		
 //		real_time_release();
 	}
