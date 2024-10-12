@@ -27,10 +27,6 @@ void application_task(void *argument);
 void goose_task(void *argument);
 void link_output(uint8_t* byte_stream, size_t length);
 
-osMutexId_t application_mutex_handle;
-const osMutexAttr_t application_mutex_attributes = {
-	.name = "application_mutex"
-};
 osThreadId_t application_task_handle;
 const osThreadAttr_t application_task_attributes = {
 	.name = "application_task",
@@ -46,7 +42,6 @@ const osThreadAttr_t goose_task_attributes = {
 
 void application_init(void)
 {
-	application_mutex_handle = osMutexNew(&application_mutex_attributes);
 	application_task_handle = osThreadNew(application_task, NULL, &application_task_attributes);
 	goose_task_handle = osThreadNew(goose_task, NULL, &goose_task_attributes);
 }
@@ -106,15 +101,6 @@ void goose_task(void* argument)
 		goose_publisher_process();
 		osDelay(1);
 	}
-}
-
-void application_take(void)
-{
-	osMutexAcquire(application_mutex_handle, osWaitForever);
-}
-void application_release(void)
-{
-	osMutexRelease(application_mutex_handle);
 }
 
 void link_output(uint8_t* byte_stream, size_t length)

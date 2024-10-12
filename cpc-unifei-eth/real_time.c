@@ -7,17 +7,62 @@
 #include "spi.h"
 #include "gpio.h"
 #include "debug.h"
+#include "ANSI87T.h"
+#include "udp_server.h"
 
 #define SAMPLING_RATE_CONTROL_FLAG 1
 #define ADC_BUSY_FLAG 2
 #define GOOSE_TASK_FLAG 3
+#define MAX_STRING_SIZE 512  // Adjust size as needed
 
+void generate_and_send_magnitude_string(void)
+{
+	char mag_string[MAX_STRING_SIZE];
+	int offset = 0;
+
+	// Collect only the channels from your task
+	const uint8_t channels_to_process[] = {
+		CHANNEL_0A,
+		CHANNEL_1A,
+		CHANNEL_2A, 
+		CHANNEL_4A,
+		CHANNEL_5A,
+		CHANNEL_6A
+	};
+
+	for (size_t i = 0; i < sizeof(channels_to_process) / sizeof(channels_to_process[0]); i++)
+	{
+		float magnitude;
+		uint8_t channel = channels_to_process[i];
+
+		signal_processing_mag_get(channel, 1, &magnitude);
+
+		// Append channel and magnitude to the string
+		int written = snprintf(
+		    mag_string + offset, 
+			MAX_STRING_SIZE - offset, 
+			"CH%d = %.2f\r\n", 
+			channel, 
+			magnitude);
+
+		// Handle buffer overflow
+		if (written < 0 || written >= (MAX_STRING_SIZE - offset))
+		{
+			// Stop processing if buffer overflows
+			break;
+		}
+
+		offset += written;
+	}
+
+	// Send the string via UDP
+	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, mag_string, offset);
+}
+
+ANSI87T ansi87t;
+general_config test_config = { 0 };
 struct ads8686s_device ads8686s;
 struct ads8686s_conversion_result conversion_buffer[CHANNEL_COUNT / 2];
-osMutexId_t real_time_mutex_handle;
-const osMutexAttr_t real_time_mutex_attributes = {
-	.name = "real_time_mutex"
-};
 osThreadId_t real_time_task_handle;
 const osThreadAttr_t real_time_task_attributes = {
 	.name = "real_time_task",
@@ -31,7 +76,59 @@ void execute_signal_processing(void);
 
 void real_time_init(void)
 {
-	real_time_mutex_handle = osMutexNew(&real_time_mutex_attributes);
+	test_config.header.magic_number = CONFIG_MAGIC_NUMBER;
+	test_config.header.uid = 0xdeadbeee;
+	test_config.header.version = CONFIG_VERSION;
+	
+	test_config.analog.channel_0a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_0a.filter = DFT;
+	test_config.analog.channel_0a.is_enabled = true;
+	test_config.analog.channel_0a.itr_ratio = 1;
+	test_config.analog.channel_0a.type = CURRENT;
+	
+	test_config.analog.channel_1a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_1a.filter = DFT;
+	test_config.analog.channel_1a.is_enabled = true;
+	test_config.analog.channel_1a.itr_ratio = 1;
+	test_config.analog.channel_1a.type = CURRENT;
+	
+	test_config.analog.channel_2a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_2a.filter = DFT;
+	test_config.analog.channel_2a.is_enabled = true;
+	test_config.analog.channel_2a.itr_ratio = 1;
+	test_config.analog.channel_2a.type = CURRENT;
+	
+	test_config.analog.channel_4a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_4a.filter = DFT;
+	test_config.analog.channel_4a.is_enabled = true;
+	test_config.analog.channel_4a.itr_ratio = 1;
+	test_config.analog.channel_4a.type = CURRENT;
+	
+	test_config.analog.channel_5a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_5a.filter = DFT;
+	test_config.analog.channel_5a.is_enabled = true;
+	test_config.analog.channel_5a.itr_ratio = 1;
+	test_config.analog.channel_5a.type = CURRENT;
+	
+	test_config.analog.channel_6a.adc_to_sec_ratio = 1;
+	test_config.analog.channel_6a.filter = DFT;
+	test_config.analog.channel_6a.is_enabled = true;
+	test_config.analog.channel_6a.itr_ratio = 1;
+	test_config.analog.channel_6a.type = CURRENT;
+	
+	ansi87t.pkp = 0.3;
+	ansi87t.point_slp2 = 3;
+	ansi87t.power = 100;
+	ansi87t.slp1 = 0.25;
+	ansi87t.slp2 = 0.75;
+	ansi87t.unrestrained_pkp = 8;
+	ansi87t.voltage_wd1 = 440;
+	ansi87t.voltage_wd2 = 138;
+	
+	ANSI87T_Init(&ansi87t, 440, 138, 100, 30, 10, 0.3, 8, 0.25, 0.75);
+	
+	config_set(&test_config);
+	
 	real_time_task_handle = osThreadNew(real_time_task, NULL, &real_time_task_attributes);
 	
 	HAL_TIM_Base_Start_IT(&htim2);
@@ -40,6 +137,8 @@ void real_time_init(void)
 
 void real_time_task(void *argument)
 {
+	current ansi87t_current = { 0 };
+	
 	adc_setup();
 	
 	// Pulse GPIO to start the first conversion
@@ -53,15 +152,46 @@ void real_time_task(void *argument)
 		// Wait for the conversion complete signal (set by GPIO ISR)
 		osThreadFlagsWait(ADC_BUSY_FLAG, osFlagsWaitAny, osWaitForever);
 		
+		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_SET);
 		// Read conversion results
 		ads8686s_read_channels(&ads8686s, conversion_buffer);
 		
 		// Do stuff here as needed
 		execute_signal_processing();
 		
+		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].real));
+		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].imag));
+		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].real));
+		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].imag));
+		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].real));
+		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].imag));
+		
+		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].real));
+		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].imag));
+		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].real));
+		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].imag));
+		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].real));
+		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].imag));
+		
+		ANSI87T_Currents_Init(&ansi87t, &ansi87t_current);
+		ANSI87T_Step(&ansi87t);
+		
+		if (ansi87t.trip[0] || ansi87t.trip[1] || ansi87t.trip[2])
+		{
+			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_RESET);
+		}
+		
+		generate_and_send_magnitude_string();
+		
 		// Pulse GPIO to start the next conversion
 		GPIOD->BSRR = GPIO_PIN_12;
 		GPIOD->BSRR = (uint32_t)GPIO_PIN_12 << 16;
+		
+		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_RESET);
 		
 		osThreadFlagsWait(SAMPLING_RATE_CONTROL_FLAG, osFlagsWaitAny, osWaitForever);
 		
@@ -124,17 +254,7 @@ void execute_signal_processing(void)
 {
 	for (size_t i = 0; i < (CHANNEL_COUNT / 2); i++)
 	{
-		signal_processing_step((uint8_t)(2 * i), (conversion_buffer[i].channel_a * ads8686s.lsb));
-		signal_processing_step((uint8_t)(2 * i + 1), (conversion_buffer[i].channel_b * ads8686s.lsb));
+		signal_processing_step((uint8_t)(2 * i), ((int16_t)conversion_buffer[i].channel_a * ads8686s.lsb));
+		signal_processing_step((uint8_t)(2 * i + 1), ((int16_t)conversion_buffer[i].channel_b * ads8686s.lsb));
 	}
-}
-
-void real_time_take(void)
-{
-	osMutexAcquire(real_time_mutex_handle, osWaitForever);
-}
-
-void real_time_release(void)
-{
-	osMutexRelease(real_time_mutex_handle);
 }

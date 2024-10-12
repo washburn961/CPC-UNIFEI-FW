@@ -164,10 +164,11 @@ void StartDefaultTask(void *argument)
 	default_config.analog.channel_0a.itr_ratio = 800;
 	default_config.analog.channel_0a.type = CURRENT;
 	
+	nor_flash_init();
 	udp_server_init();
 	application_init();
 	real_time_init();
-	nor_flash_init();
+	
 	if (!config_restore())
 	{
 		config_set(&default_config);
