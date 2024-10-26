@@ -160,7 +160,7 @@ void real_time_init(void)
 	ANSI51_Init(&ansi51, 0.5, 5.5, 1041.67e-6, STANDARD_2, 1, zlt1, zlt0, 5.0, 440000.0 / 115.0, 1000.0 / 5.0, true, true, true);
 	
 	//ANSI87B parametrização
-	ANSI87B_Init(&ansi87b, 2000, 1000, 10000, 0.2, 0.5);
+	ANSI87B_Init(&ansi87b, 2000, 1000, 10000, 0.2, 0.5, 4);
 	
 	
 	config_set(&test_config);
@@ -233,38 +233,44 @@ void real_time_task(void *argument)
 //		signal_processing_real_get(CHANNEL_6A, 1, &(VphC.real));
 //		signal_processing_imag_get(CHANNEL_6A, 1, &(VphC.imag));
 		
-		
-		
 //		ANSI87T_Currents_Init(&ansi87t, &ansi87t_current);
 //		ANSI87T_Step(&ansi87t);
 		
 		//ANSI 87B currents
+		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87b.current[0][0]));
+		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87b.current[0][1]));
+		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87b.current[0][2]));
+		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87b.current[0][3]));
+		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87b.current[0][4]));
+		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87b.current[0][5]));
 		
+		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87b.current[1][0]));
+		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87b.current[1][1]));
+		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87b.current[1][2]));
+		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87b.current[1][3]));
+		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87b.current[1][4]));
+		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87b.current[1][5]));
+		
+		signal_processing_real_get(CHANNEL_4B, 1, &(ansi87b.current[2][0]));
+		signal_processing_imag_get(CHANNEL_4B, 1, &(ansi87b.current[2][1]));
+		signal_processing_real_get(CHANNEL_5B, 1, &(ansi87b.current[2][2]));
+		signal_processing_imag_get(CHANNEL_5B, 1, &(ansi87b.current[2][3]));
+		signal_processing_real_get(CHANNEL_6B, 1, &(ansi87b.current[2][4]));
+		signal_processing_imag_get(CHANNEL_6B, 1, &(ansi87b.current[2][5]));
+		
+		signal_processing_real_get(CHANNEL_0B, 1, &(ansi87b.current[3][0]));
+		signal_processing_imag_get(CHANNEL_0B, 1, &(ansi87b.current[3][1]));
+		signal_processing_real_get(CHANNEL_1B, 1, &(ansi87b.current[3][2]));
+		signal_processing_imag_get(CHANNEL_1B, 1, &(ansi87b.current[3][3]));
+		signal_processing_real_get(CHANNEL_2B, 1, &(ansi87b.current[3][4]));
+		signal_processing_imag_get(CHANNEL_2B, 1, &(ansi87b.current[3][5]));
+				
 		
 		//ANSI 87B step
 		ANSI87B_Step(&ansi87b);
 		
-		//ANSI 21 sets
-		ANSI21_Set_current(&ansi21_current, IphA, IphB, IphC);
-		ANSI21_Set_voltage(&ansi21_voltage, VphA, VphB, VphC);
-		
-		//ANSI21 steps
-		ANSI21_Step_Mp(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
-		ANSI21_Step_Mg(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
-		ANSI21_Step_Qg(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
-		
-		
-		//ANSI50 set
-		ANSI50_SetCurrentVoltage(&ansi50, IphA, IphB, IphC, VphA, VphB, VphC);
-		//ANSI50 step
-		ANSI50_Step(&ansi50);
-		
-		//ANSI51 set
-		ANSI51_SetCurrentVoltage(&ansi51, IphA, IphB, IphC, VphA, VphB, VphC);
-		//ANSI51 step
-		ANSI51_Step(&ansi51);
-		
-		if (ansi21_mp.is_tripped[0] || ansi21_mp.is_tripped[1] || ansi21_mp.is_tripped[2])
+		//ANSI 87B trip
+		if (ansi87b.trip)
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
 		}
@@ -273,50 +279,79 @@ void real_time_task(void *argument)
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_RESET);
 		}
 		
-		if (ansi21_mg.is_tripped[0] || ansi21_mg.is_tripped[1] || ansi21_mg.is_tripped[2])
-		{
-			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_RESET);
-		}
-		
-		if (ansi21_qg.is_tripped[0] || ansi21_qg.is_tripped[1] || ansi21_qg.is_tripped[2])
-		{
-			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_SET);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_RESET);
-		}
-		
-		if (ansi50.is_tripped[0] || ansi50.is_tripped[1] || ansi50.is_tripped[2])
-		{
-			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_SET);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_RESET);
-		}
-		
-		if (ansi51.is_tripped[0] || ansi51.is_tripped[1] || ansi51.is_tripped[2])
-		{
-			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_SET);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_RESET);
-		}
-		
-		if (ansi51.is_pickupped[0] || ansi51.is_pickupped[1] || ansi51.is_pickupped[2])
-		{
-			HAL_GPIO_WritePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin, GPIO_PIN_SET);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin, GPIO_PIN_RESET);
-		}
+//		//ANSI 21 sets
+//		ANSI21_Set_current(&ansi21_current, IphA, IphB, IphC);
+//		ANSI21_Set_voltage(&ansi21_voltage, VphA, VphB, VphC);
+//		
+//		//ANSI21 steps
+//		ANSI21_Step_Mp(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
+//		ANSI21_Step_Mg(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
+//		ANSI21_Step_Qg(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
+//		
+//		
+//		//ANSI50 set
+//		ANSI50_SetCurrentVoltage(&ansi50, IphA, IphB, IphC, VphA, VphB, VphC);
+//		//ANSI50 step
+//		ANSI50_Step(&ansi50);
+//		
+//		//ANSI51 set
+//		ANSI51_SetCurrentVoltage(&ansi51, IphA, IphB, IphC, VphA, VphB, VphC);
+//		//ANSI51 step
+//		ANSI51_Step(&ansi51);
+//		
+//		if (ansi21_mp.is_tripped[0] || ansi21_mp.is_tripped[1] || ansi21_mp.is_tripped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
+//		}
+//		else
+//		{
+//			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_RESET);
+//		}
+//		
+//		if (ansi21_mg.is_tripped[0] || ansi21_mg.is_tripped[1] || ansi21_mg.is_tripped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
+//		}
+//		else
+//		{
+//			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_RESET);
+//		}
+//		
+//		if (ansi21_qg.is_tripped[0] || ansi21_qg.is_tripped[1] || ansi21_qg.is_tripped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_SET);
+//		}
+//		else
+//		{
+//			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_RESET);
+//		}
+//		
+//		if (ansi50.is_tripped[0] || ansi50.is_tripped[1] || ansi50.is_tripped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_SET);
+//		}
+//		else
+//		{
+//			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_RESET);
+//		}
+//		
+//		if (ansi51.is_tripped[0] || ansi51.is_tripped[1] || ansi51.is_tripped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_SET);
+//		}
+//		else
+//		{
+//			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_RESET);
+//		}
+//		
+//		if (ansi51.is_pickupped[0] || ansi51.is_pickupped[1] || ansi51.is_pickupped[2])
+//		{
+//			HAL_GPIO_WritePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin, GPIO_PIN_SET);
+//		}
+//		else
+//		{
+//			HAL_GPIO_WritePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin, GPIO_PIN_RESET);
+//		}
 		
 		generate_and_send_magnitude_string();
 		
@@ -390,40 +425,75 @@ void execute_signal_processing(void)
 	}
 }
 
+
+char message[MAX_STRING_SIZE];
+// Collect all the channels from 0A to 7A and 0B to 7B
+const uint8_t channels_to_process[] = {
+	CHANNEL_0A,
+	CHANNEL_1A,
+	CHANNEL_2A,
+	CHANNEL_3A,
+	CHANNEL_4A,
+	CHANNEL_5A,
+	CHANNEL_6A,
+	CHANNEL_7A,
+	CHANNEL_0B,
+	CHANNEL_1B,
+	CHANNEL_2B,
+	CHANNEL_3B,
+	CHANNEL_4B,
+	CHANNEL_5B,
+	CHANNEL_6B,
+	CHANNEL_7B
+};
+float magnitude[16] = { 0 };
+float phase[16] = { 0 };
 void generate_and_send_magnitude_string(void)
 {
-	char message[MAX_STRING_SIZE];
-	// Collect only the channels from your task
-	const uint8_t channels_to_process[] = {
-		CHANNEL_0A,
-		CHANNEL_1A,
-		CHANNEL_2A, 
-		CHANNEL_4A,
-		CHANNEL_5A,
-		CHANNEL_6A
-	};
-	float magnitude[6] = { 0 };
-	float phase[6] = { 0 };
+	// Process each channel for magnitude and phase
+	for (int i = 0; i < 16; i++) {
+		signal_processing_mag_get(channels_to_process[i], 1, &(magnitude[i]));
+		signal_processing_phase_get(channels_to_process[i], 1, &(phase[i]));
+	}
 
-	signal_processing_mag_get(CHANNEL_0A, 1, &(magnitude[0]));
-	signal_processing_phase_get(CHANNEL_0A, 1, &(phase[0]));
-	
-	signal_processing_mag_get(CHANNEL_1A, 1, &(magnitude[1]));
-	signal_processing_phase_get(CHANNEL_1A, 1, &(phase[1]));
-	
-	signal_processing_mag_get(CHANNEL_2A, 1, &(magnitude[2]));
-	signal_processing_phase_get(CHANNEL_2A, 1, &(phase[2]));
-	
-	signal_processing_mag_get(CHANNEL_4A, 1, &(magnitude[3]));
-	signal_processing_phase_get(CHANNEL_4A, 1, &(phase[3]));
-	
-	signal_processing_mag_get(CHANNEL_5A, 1, &(magnitude[4]));
-	signal_processing_phase_get(CHANNEL_5A, 1, &(phase[4]));
-	
-	signal_processing_mag_get(CHANNEL_6A, 1, &(magnitude[5]));
-	signal_processing_phase_get(CHANNEL_6A, 1, &(phase[5]));
-	
-	size_t len = sprintf(message, "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\r\n", magnitude[0], phase[0], magnitude[1], phase[1], magnitude[2], phase[2], magnitude[3], phase[3], magnitude[4], phase[4], magnitude[5], phase[5]);
-	
+	// Format the message string with the results
+	size_t len = sprintf(message,
+		"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,"
+		"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,"
+		"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,"
+		"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\r\n",
+		magnitude[0],
+		phase[0],
+		magnitude[1],
+		phase[1],
+		magnitude[2],
+		phase[2],
+		magnitude[3],
+		phase[3],
+		magnitude[4],
+		phase[4],
+		magnitude[5],
+		phase[5],
+		magnitude[6],
+		phase[6],
+		magnitude[7],
+		phase[7],
+		magnitude[8],
+		phase[8],
+		magnitude[9],
+		phase[9],
+		magnitude[10],
+		phase[10],
+		magnitude[11],
+		phase[11],
+		magnitude[12],
+		phase[12],
+		magnitude[13],
+		phase[13],
+		magnitude[14],
+		phase[14],
+		magnitude[15],
+		phase[15]);
+
 	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, message, len);
 }
