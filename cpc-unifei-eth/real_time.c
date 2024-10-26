@@ -8,6 +8,10 @@
 #include "gpio.h"
 #include "debug.h"
 #include "ANSI87T.h"
+#include "ANSI21.h"
+#include "ANSI50.h"
+#include "ANSI51.h"
+#include "ANSI87B.h"
 #include "udp_server.h"
 
 #define SAMPLING_RATE_CONTROL_FLAG 1
@@ -15,51 +19,29 @@
 #define GOOSE_TASK_FLAG 3
 #define MAX_STRING_SIZE 512  // Adjust size as needed
 
-void generate_and_send_magnitude_string(void)
-{
-	char mag_string[MAX_STRING_SIZE];
-	int offset = 0;
 
-	// Collect only the channels from your task
-	const uint8_t channels_to_process[] = {
-		CHANNEL_0A,
-		CHANNEL_1A,
-		CHANNEL_2A, 
-		CHANNEL_4A,
-		CHANNEL_5A,
-		CHANNEL_6A
-	};
+//ANSI87T ansi87t;
 
-	for (size_t i = 0; i < sizeof(channels_to_process) / sizeof(channels_to_process[0]); i++)
-	{
-		float magnitude;
-		uint8_t channel = channels_to_process[i];
+// ANSI21 related stuff
+ANSI21_Config ansi21_config;
+ANSI21_Current ansi21_current;
+ANSI21_Voltage ansi21_voltage;
+ANSI21_Mp ansi21_mp;
+ANSI21_Mg ansi21_mg;
+ANSI21_Qg ansi21_qg;
+complex_t zlt1 = { 5.82,72.60 };
+complex_t zlt0 = { 79.30,332.52 };
 
-		signal_processing_mag_get(channel, 1, &magnitude);
 
-		// Append channel and magnitude to the string
-		int written = snprintf(
-		    mag_string + offset, 
-			MAX_STRING_SIZE - offset, 
-			"CH%d = %.2f\r\n", 
-			channel, 
-			magnitude);
+//ANSI 50 e 51 structs
+ANSI50 ansi50;
+ANSI51 ansi51;
 
-		// Handle buffer overflow
-		if (written < 0 || written >= (MAX_STRING_SIZE - offset))
-		{
-			// Stop processing if buffer overflows
-			break;
-		}
+//ANSI 87B struct
+ANSI87B ansi87b;
 
-		offset += written;
-	}
 
-	// Send the string via UDP
-	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, mag_string, offset);
-}
 
-ANSI87T ansi87t;
 general_config test_config = { 0 };
 struct ads8686s_device ads8686s;
 struct ads8686s_conversion_result conversion_buffer[CHANNEL_COUNT / 2];
@@ -73,6 +55,7 @@ const osThreadAttr_t real_time_task_attributes = {
 void real_time_task(void *argument);
 void adc_setup(void);
 void execute_signal_processing(void);
+void generate_and_send_magnitude_string(void);
 
 void real_time_init(void)
 {
@@ -83,49 +66,102 @@ void real_time_init(void)
 	test_config.analog.channel_0a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_0a.filter = DFT;
 	test_config.analog.channel_0a.is_enabled = true;
-	test_config.analog.channel_0a.itr_ratio = 200;
+	test_config.analog.channel_0a.itr_ratio = 1;
 	test_config.analog.channel_0a.type = CURRENT;
 	
 	test_config.analog.channel_1a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_1a.filter = DFT;
 	test_config.analog.channel_1a.is_enabled = true;
-	test_config.analog.channel_1a.itr_ratio = 200;
+	test_config.analog.channel_1a.itr_ratio = 1;
 	test_config.analog.channel_1a.type = CURRENT;
 	
 	test_config.analog.channel_2a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_2a.filter = DFT;
 	test_config.analog.channel_2a.is_enabled = true;
-	test_config.analog.channel_2a.itr_ratio = 200;
+	test_config.analog.channel_2a.itr_ratio = 1;
 	test_config.analog.channel_2a.type = CURRENT;
 	
 	test_config.analog.channel_4a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_4a.filter = DFT;
 	test_config.analog.channel_4a.is_enabled = true;
-	test_config.analog.channel_4a.itr_ratio = 200;
+	test_config.analog.channel_4a.itr_ratio = 1;
 	test_config.analog.channel_4a.type = CURRENT;
 	
 	test_config.analog.channel_5a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_5a.filter = DFT;
 	test_config.analog.channel_5a.is_enabled = true;
-	test_config.analog.channel_5a.itr_ratio = 200;
+	test_config.analog.channel_5a.itr_ratio = 1;
 	test_config.analog.channel_5a.type = CURRENT;
 	
 	test_config.analog.channel_6a.adc_to_sec_ratio = 10;
 	test_config.analog.channel_6a.filter = DFT;
 	test_config.analog.channel_6a.is_enabled = true;
-	test_config.analog.channel_6a.itr_ratio = 200;
+	test_config.analog.channel_6a.itr_ratio = 1;
 	test_config.analog.channel_6a.type = CURRENT;
 	
-	ansi87t.pkp = 0.3;
-	ansi87t.point_slp2 = 3;
-	ansi87t.power = 100;
-	ansi87t.slp1 = 0.25;
-	ansi87t.slp2 = 0.75;
-	ansi87t.unrestrained_pkp = 8;
-	ansi87t.voltage_wd1 = 440;
-	ansi87t.voltage_wd2 = 138;
+	test_config.analog.channel_0a.adc_to_sec_ratio = 10;
+	test_config.analog.channel_0a.filter = DFT;
+	test_config.analog.channel_0a.is_enabled = true;
+	test_config.analog.channel_0a.itr_ratio = 1;
+	test_config.analog.channel_0a.type = CURRENT;
 	
-	ANSI87T_Init(&ansi87t, 440, 138, 100, 30, 10, 0.3, 8, 0.25, 0.75);
+	test_config.analog.channel_1b.adc_to_sec_ratio = 10;
+	test_config.analog.channel_1b.filter = DFT;
+	test_config.analog.channel_1b.is_enabled = true;
+	test_config.analog.channel_1b.itr_ratio = 1;
+	test_config.analog.channel_1b.type = CURRENT;
+								
+	test_config.analog.channel_2b.adc_to_sec_ratio = 10;
+	test_config.analog.channel_2b.filter = DFT;
+	test_config.analog.channel_2b.is_enabled = true;
+	test_config.analog.channel_2b.itr_ratio = 1;
+	test_config.analog.channel_2b.type = CURRENT;
+								
+	test_config.analog.channel_4b.adc_to_sec_ratio = 10;
+	test_config.analog.channel_4b.filter = DFT;
+	test_config.analog.channel_4b.is_enabled = true;
+	test_config.analog.channel_4b.itr_ratio = 1;
+	test_config.analog.channel_4b.type = CURRENT;
+								
+	test_config.analog.channel_5b.adc_to_sec_ratio = 10;
+	test_config.analog.channel_5b.filter = DFT;
+	test_config.analog.channel_5b.is_enabled = true;
+	test_config.analog.channel_5b.itr_ratio = 1;
+	test_config.analog.channel_5b.type = CURRENT;
+								
+	test_config.analog.channel_6b.adc_to_sec_ratio = 10;
+	test_config.analog.channel_6b.filter = DFT;
+	test_config.analog.channel_6b.is_enabled = true;
+	test_config.analog.channel_6b.itr_ratio = 1;
+	test_config.analog.channel_6b.type = CURRENT;
+	
+//	ansi87t.pkp = 0.3;
+//	ansi87t.point_slp2 = 3;
+//	ansi87t.power = 100;
+//	ansi87t.slp1 = 0.25;
+//	ansi87t.slp2 = 0.75;
+//	ansi87t.unrestrained_pkp = 8;
+//	ansi87t.voltage_wd1 = 440;
+//	ansi87t.voltage_wd2 = 138;	
+//	ANSI87T_Init(&ansi87t, 440, 138, 100, 30, 100, 0.3, 8, 0.25, 0.75);
+	
+	
+	//ANSI21 parametrização
+	ANSI21_Init_param(&ansi21_config, zlt1, zlt0, 5.0, 5.5, 440000.0 / 115.0, 1000.0 / 5.0, 1.0 / 960.0, true, true, true, true, true, true);
+	ANSI21_Init_Mp(&ansi21_mp, 0.85, 1.15, 0.3);
+	ANSI21_Init_Mg(&ansi21_mg, 0.85, 1.15, 0.3);
+	ANSI21_Init_Qg(&ansi21_qg, 0.85, 1.15, 15.0, 20.0, 0.35);
+	
+	
+	//ANSI50 parametrização
+	ANSI50_Init(&ansi50, 17.0, zlt1, zlt0, 5.0, 440000.0 / 115.0, 1000.0 / 5.0, true, true, true);
+
+	//ANSI51 parametrização
+	ANSI51_Init(&ansi51, 0.5, 5.5, 1041.67e-6, STANDARD_2, 1, zlt1, zlt0, 5.0, 440000.0 / 115.0, 1000.0 / 5.0, true, true, true);
+	
+	//ANSI87B parametrização
+	ANSI87B_Init(&ansi87b, 2000, 1000, 10000, 0.2, 0.5);
+	
 	
 	config_set(&test_config);
 	
@@ -137,7 +173,14 @@ void real_time_init(void)
 
 void real_time_task(void *argument)
 {
-	current ansi87t_current = { 0 };
+//	current ansi87t_current = { 0 };
+	complex_t IphA;
+	complex_t IphB;
+	complex_t IphC;
+	
+	complex_t VphA;
+	complex_t VphB;
+	complex_t VphC;
 	
 	adc_setup();
 	
@@ -162,30 +205,117 @@ void real_time_task(void *argument)
 		// Do stuff here as needed
 		execute_signal_processing();
 		
-		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].real));
-		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].imag));
-		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].real));
-		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].imag));
-		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].real));
-		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].imag));
+//		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].real));
+//		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].imag));
+//		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].real));
+//		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].imag));
+//		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].real));
+//		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].imag));
+//		
+//		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].real));
+//		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].imag));
+//		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].real));
+//		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].imag));
+//		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].real));
+//		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].imag));
 		
-		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].real));
-		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].imag));
-		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].real));
-		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].imag));
-		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].real));
-		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].imag));
+//		signal_processing_real_get(CHANNEL_0A, 1, &(IphA.real));
+//		signal_processing_imag_get(CHANNEL_0A, 1, &(IphA.imag));
+//		signal_processing_real_get(CHANNEL_1A, 1, &(IphB.real));
+//		signal_processing_imag_get(CHANNEL_1A, 1, &(IphB.imag));
+//		signal_processing_real_get(CHANNEL_2A, 1, &(IphC.real));
+//		signal_processing_imag_get(CHANNEL_2A, 1, &(IphC.imag));
+//		
+//		signal_processing_real_get(CHANNEL_4A, 1, &(VphA.real));
+//		signal_processing_imag_get(CHANNEL_4A, 1, &(VphA.imag));
+//		signal_processing_real_get(CHANNEL_5A, 1, &(VphB.real));
+//		signal_processing_imag_get(CHANNEL_5A, 1, &(VphB.imag));
+//		signal_processing_real_get(CHANNEL_6A, 1, &(VphC.real));
+//		signal_processing_imag_get(CHANNEL_6A, 1, &(VphC.imag));
 		
-		ANSI87T_Currents_Init(&ansi87t, &ansi87t_current);
-		ANSI87T_Step(&ansi87t);
 		
-		if (ansi87t.trip[0] || ansi87t.trip[1] || ansi87t.trip[2])
+		
+//		ANSI87T_Currents_Init(&ansi87t, &ansi87t_current);
+//		ANSI87T_Step(&ansi87t);
+		
+		//ANSI 87B currents
+		
+		
+		//ANSI 87B step
+		ANSI87B_Step(&ansi87b);
+		
+		//ANSI 21 sets
+		ANSI21_Set_current(&ansi21_current, IphA, IphB, IphC);
+		ANSI21_Set_voltage(&ansi21_voltage, VphA, VphB, VphC);
+		
+		//ANSI21 steps
+		ANSI21_Step_Mp(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
+		ANSI21_Step_Mg(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
+		ANSI21_Step_Qg(&ansi21_mp, &ansi21_mg, &ansi21_qg, &ansi21_current, &ansi21_voltage, &ansi21_config);
+		
+		
+		//ANSI50 set
+		ANSI50_SetCurrentVoltage(&ansi50, IphA, IphB, IphC, VphA, VphB, VphC);
+		//ANSI50 step
+		ANSI50_Step(&ansi50);
+		
+		//ANSI51 set
+		ANSI51_SetCurrentVoltage(&ansi51, IphA, IphB, IphC, VphA, VphB, VphC);
+		//ANSI51 step
+		ANSI51_Step(&ansi51);
+		
+		if (ansi21_mp.is_tripped[0] || ansi21_mp.is_tripped[1] || ansi21_mp.is_tripped[2])
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_RESET);
+		}
+		
+		if (ansi21_mg.is_tripped[0] || ansi21_mg.is_tripped[1] || ansi21_mg.is_tripped[2])
+		{
+			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_RESET);
+		}
+		
+		if (ansi21_qg.is_tripped[0] || ansi21_qg.is_tripped[1] || ansi21_qg.is_tripped[2])
+		{
+			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_RESET);
+		}
+		
+		if (ansi50.is_tripped[0] || ansi50.is_tripped[1] || ansi50.is_tripped[2])
+		{
+			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_RESET);
+		}
+		
+		if (ansi51.is_tripped[0] || ansi51.is_tripped[1] || ansi51.is_tripped[2])
+		{
+			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_RESET);
+		}
+		
+		if (ansi51.is_pickupped[0] || ansi51.is_pickupped[1] || ansi51.is_pickupped[2])
+		{
+			HAL_GPIO_WritePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin, GPIO_PIN_SET);
+		}
+		else
+		{
+			HAL_GPIO_WritePin(OUT3_B_OUT_GPIO_Port, OUT3_B_OUT_Pin, GPIO_PIN_RESET);
 		}
 		
 		generate_and_send_magnitude_string();
@@ -203,7 +333,7 @@ void real_time_task(void *argument)
 void adc_setup(void)
 {
 	struct ads8686s_init_param ads8686s_init_param = {
-		.osr = ADS8686S_OSR_128
+		.osr = ADS8686S_OSR_2
 	};
 	struct ads8686s_sequencer_layer layers[8] = { 0 };
 		
@@ -258,4 +388,42 @@ void execute_signal_processing(void)
 		signal_processing_step((uint8_t)(2 * i), ((int16_t)conversion_buffer[i].channel_a * ads8686s.lsb));
 		signal_processing_step((uint8_t)(2 * i + 1), ((int16_t)conversion_buffer[i].channel_b * ads8686s.lsb));
 	}
+}
+
+void generate_and_send_magnitude_string(void)
+{
+	char message[MAX_STRING_SIZE];
+	// Collect only the channels from your task
+	const uint8_t channels_to_process[] = {
+		CHANNEL_0A,
+		CHANNEL_1A,
+		CHANNEL_2A, 
+		CHANNEL_4A,
+		CHANNEL_5A,
+		CHANNEL_6A
+	};
+	float magnitude[6] = { 0 };
+	float phase[6] = { 0 };
+
+	signal_processing_mag_get(CHANNEL_0A, 1, &(magnitude[0]));
+	signal_processing_phase_get(CHANNEL_0A, 1, &(phase[0]));
+	
+	signal_processing_mag_get(CHANNEL_1A, 1, &(magnitude[1]));
+	signal_processing_phase_get(CHANNEL_1A, 1, &(phase[1]));
+	
+	signal_processing_mag_get(CHANNEL_2A, 1, &(magnitude[2]));
+	signal_processing_phase_get(CHANNEL_2A, 1, &(phase[2]));
+	
+	signal_processing_mag_get(CHANNEL_4A, 1, &(magnitude[3]));
+	signal_processing_phase_get(CHANNEL_4A, 1, &(phase[3]));
+	
+	signal_processing_mag_get(CHANNEL_5A, 1, &(magnitude[4]));
+	signal_processing_phase_get(CHANNEL_5A, 1, &(phase[4]));
+	
+	signal_processing_mag_get(CHANNEL_6A, 1, &(magnitude[5]));
+	signal_processing_phase_get(CHANNEL_6A, 1, &(phase[5]));
+	
+	size_t len = sprintf(message, "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\r\n", magnitude[0], phase[0], magnitude[1], phase[1], magnitude[2], phase[2], magnitude[3], phase[3], magnitude[4], phase[4], magnitude[5], phase[5]);
+	
+	udp_server_send(DEFAULT_IPV4_ADDR, DEFAULT_PORT, message, len);
 }

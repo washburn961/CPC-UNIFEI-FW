@@ -6,6 +6,7 @@
 
 typedef void(*phasor_filter_execute)(uint8_t channel, float input);
 typedef float(*phasor_filter_get_mag)(uint8_t channel, size_t index);
+typedef float(*phasor_filter_get_phase)(uint8_t channel, size_t index);
 
 typedef struct
 {
@@ -14,6 +15,7 @@ typedef struct
 	dft dft;
 	phasor_filter_execute filter_exec;
 	phasor_filter_get_mag filter_get_mag;
+	phasor_filter_get_phase filter_get_phase;
 	float real[SAMPLE_COUNT];
 	float imag[SAMPLE_COUNT];
 	float ring_buffer_content[SAMPLE_COUNT];
@@ -29,6 +31,7 @@ float cos_coef[SAMPLE_COUNT * SAMPLE_COUNT] = { 0 };
 float apply_ratios(uint8_t channel, float input);
 void dft_execute(uint8_t channel, float input);
 float dft_get_mag(uint8_t channel, size_t index);
+float dft_get_ph(uint8_t channel, size_t index);
 
 void signal_processing_channel_config(uint8_t channel, analog_channel_config* config)
 {
@@ -51,6 +54,7 @@ void signal_processing_channel_config(uint8_t channel, analog_channel_config* co
 		channel_internals->dft.size = SAMPLE_COUNT;
 		channel_internals->filter_exec = &dft_execute;
 		channel_internals->filter_get_mag = &dft_get_mag;
+		channel_internals->filter_get_phase = &dft_get_ph;
 		dft_init(&(channel_internals->dft));
 		
 	default:
@@ -73,6 +77,11 @@ void signal_processing_raw_get(uint8_t channel, float* out)
 {
 	processing_channel_internals* channel_internals = &(internals[channel]);
 	*out = channel_internals->last_value;
+}
+void signal_processing_phase_get(uint8_t channel, size_t index, float* out)
+{
+	processing_channel_internals* channel_internals = &(internals[channel]);
+	*out = channel_internals->filter_get_phase(channel, index);
 }
 void signal_processing_mag_get(uint8_t channel, size_t index, float* out)
 {
@@ -112,4 +121,14 @@ float dft_get_mag(uint8_t channel, size_t index)
 	dft_get_magnitude(&channel_internals->dft, &tmp, index);
 	
 	return tmp;
-} 
+}
+
+float dft_get_ph(uint8_t channel, size_t index)
+{
+	float tmp;
+	processing_channel_internals* channel_internals = &(internals[channel]);
+	
+	dft_get_phase(&channel_internals->dft, &tmp, index);
+	
+	return tmp;
+}
