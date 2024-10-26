@@ -99,11 +99,11 @@ void real_time_init(void)
 	test_config.analog.channel_6a.itr_ratio = 1;
 	test_config.analog.channel_6a.type = CURRENT;
 	
-	test_config.analog.channel_0a.adc_to_sec_ratio = 10;
-	test_config.analog.channel_0a.filter = DFT;
-	test_config.analog.channel_0a.is_enabled = true;
-	test_config.analog.channel_0a.itr_ratio = 1;
-	test_config.analog.channel_0a.type = CURRENT;
+	test_config.analog.channel_0b.adc_to_sec_ratio = 10;
+	test_config.analog.channel_0b.filter = DFT;
+	test_config.analog.channel_0b.is_enabled = true;
+	test_config.analog.channel_0b.itr_ratio = 1;
+	test_config.analog.channel_0b.type = CURRENT;
 	
 	test_config.analog.channel_1b.adc_to_sec_ratio = 10;
 	test_config.analog.channel_1b.filter = DFT;
