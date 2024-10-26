@@ -20,7 +20,7 @@
 #define MAX_STRING_SIZE 512  // Adjust size as needed
 
 
-//ANSI87T ansi87t;
+ANSI87T ansi87t;
 
 // ANSI21 related stuff
 ANSI21_Config ansi21_config;
@@ -59,81 +59,129 @@ void generate_and_send_magnitude_string(void);
 
 void real_time_init(void)
 {
-	test_config.header.magic_number = CONFIG_MAGIC_NUMBER;
-	test_config.header.uid = 0xdeadbeee;
-	test_config.header.version = CONFIG_VERSION;
 	
-	test_config.analog.channel_0a.adc_to_sec_ratio = 10;
-	test_config.analog.channel_0a.filter = DFT;
-	test_config.analog.channel_0a.is_enabled = true;
-	test_config.analog.channel_0a.itr_ratio = 1;
-	test_config.analog.channel_0a.type = CURRENT;
+	//ansi87b
 	
-	test_config.analog.channel_1a.adc_to_sec_ratio = 10;
-	test_config.analog.channel_1a.filter = DFT;
-	test_config.analog.channel_1a.is_enabled = true;
-	test_config.analog.channel_1a.itr_ratio = 1;
-	test_config.analog.channel_1a.type = CURRENT;
 	
-	test_config.analog.channel_2a.adc_to_sec_ratio = 10;
-	test_config.analog.channel_2a.filter = DFT;
-	test_config.analog.channel_2a.is_enabled = true;
-	test_config.analog.channel_2a.itr_ratio = 1;
-	test_config.analog.channel_2a.type = CURRENT;
+//	test_config.header.magic_number = CONFIG_MAGIC_NUMBER;
+//	test_config.header.uid = 0xdeadbeee;
+//	test_config.header.version = CONFIG_VERSION;
+//	
+//	test_config.analog.channel_0a.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_0a.filter = DFT;
+//	test_config.analog.channel_0a.is_enabled = true;
+//	test_config.analog.channel_0a.itr_ratio = 120;
+//	test_config.analog.channel_0a.type = CURRENT;
+//	
+//	test_config.analog.channel_1a.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_1a.filter = DFT;
+//	test_config.analog.channel_1a.is_enabled = true;
+//	test_config.analog.channel_1a.itr_ratio = 120;
+//	test_config.analog.channel_1a.type = CURRENT;
+//	
+//	test_config.analog.channel_2a.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_2a.filter = DFT;
+//	test_config.analog.channel_2a.is_enabled = true;
+//	test_config.analog.channel_2a.itr_ratio = 120;
+//	test_config.analog.channel_2a.type = CURRENT;
+//	
+//	test_config.analog.channel_4a.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_4a.filter = DFT;
+//	test_config.analog.channel_4a.is_enabled = true;
+//	test_config.analog.channel_4a.itr_ratio = 300;
+//	test_config.analog.channel_4a.type = CURRENT;
+//	
+//	test_config.analog.channel_5a.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_5a.filter = DFT;
+//	test_config.analog.channel_5a.is_enabled = true;
+//	test_config.analog.channel_5a.itr_ratio = 300;
+//	test_config.analog.channel_5a.type = CURRENT;
+//	
+//	test_config.analog.channel_6a.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_6a.filter = DFT;
+//	test_config.analog.channel_6a.is_enabled = true;
+//	test_config.analog.channel_6a.itr_ratio = 300;
+//	test_config.analog.channel_6a.type = CURRENT;
+//	
+//	test_config.analog.channel_0b.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_0b.filter = DFT;
+//	test_config.analog.channel_0b.is_enabled = true;
+//	test_config.analog.channel_0b.itr_ratio = 200;
+//	test_config.analog.channel_0b.type = CURRENT;
+//	
+//	test_config.analog.channel_1b.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_1b.filter = DFT;
+//	test_config.analog.channel_1b.is_enabled = true;
+//	test_config.analog.channel_1b.itr_ratio = 200;
+//	test_config.analog.channel_1b.type = CURRENT;
+//								
+//	test_config.analog.channel_2b.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_2b.filter = DFT;
+//	test_config.analog.channel_2b.is_enabled = true;
+//	test_config.analog.channel_2b.itr_ratio = 200;
+//	test_config.analog.channel_2b.type = CURRENT;
+//								
+//	test_config.analog.channel_4b.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_4b.filter = DFT;
+//	test_config.analog.channel_4b.is_enabled = true;
+//	test_config.analog.channel_4b.itr_ratio = 30;
+//	test_config.analog.channel_4b.type = CURRENT;
+//								
+//	test_config.analog.channel_5b.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_5b.filter = DFT;
+//	test_config.analog.channel_5b.is_enabled = true;
+//	test_config.analog.channel_5b.itr_ratio = 30;
+//	test_config.analog.channel_5b.type = CURRENT;
+//								
+//	test_config.analog.channel_6b.adc_to_sec_ratio = 10;
+//	test_config.analog.channel_6b.filter = DFT;
+//	test_config.analog.channel_6b.is_enabled = true;
+//	test_config.analog.channel_6b.itr_ratio = 30;
+//	test_config.analog.channel_6b.type = CURRENT;
 	
-	test_config.analog.channel_4a.adc_to_sec_ratio = 10;
-	test_config.analog.channel_4a.filter = DFT;
-	test_config.analog.channel_4a.is_enabled = true;
-	test_config.analog.channel_4a.itr_ratio = 1;
-	test_config.analog.channel_4a.type = CURRENT;
+
+	//ansi87t
 	
-	test_config.analog.channel_5a.adc_to_sec_ratio = 10;
-	test_config.analog.channel_5a.filter = DFT;
-	test_config.analog.channel_5a.is_enabled = true;
-	test_config.analog.channel_5a.itr_ratio = 1;
-	test_config.analog.channel_5a.type = CURRENT;
+		test_config.header.magic_number = CONFIG_MAGIC_NUMBER;
+		test_config.header.uid = 0xdeadbeee;
+		test_config.header.version = CONFIG_VERSION;
+		
+		test_config.analog.channel_0a.adc_to_sec_ratio = 10;
+		test_config.analog.channel_0a.filter = DFT;
+		test_config.analog.channel_0a.is_enabled = true;
+		test_config.analog.channel_0a.itr_ratio = 30;
+		test_config.analog.channel_0a.type = CURRENT;
+		
+		test_config.analog.channel_1a.adc_to_sec_ratio = 10;
+		test_config.analog.channel_1a.filter = DFT;
+		test_config.analog.channel_1a.is_enabled = true;
+		test_config.analog.channel_1a.itr_ratio = 30;
+		test_config.analog.channel_1a.type = CURRENT;
+		
+		test_config.analog.channel_2a.adc_to_sec_ratio = 10;
+		test_config.analog.channel_2a.filter = DFT;
+		test_config.analog.channel_2a.is_enabled = true;
+		test_config.analog.channel_2a.itr_ratio = 30;
+		test_config.analog.channel_2a.type = CURRENT;
+		
+		test_config.analog.channel_4a.adc_to_sec_ratio = 10;
+		test_config.analog.channel_4a.filter = DFT;
+		test_config.analog.channel_4a.is_enabled = true;
+		test_config.analog.channel_4a.itr_ratio = 100;
+		test_config.analog.channel_4a.type = CURRENT;
+		
+		test_config.analog.channel_5a.adc_to_sec_ratio = 10;
+		test_config.analog.channel_5a.filter = DFT;
+		test_config.analog.channel_5a.is_enabled = true;
+		test_config.analog.channel_5a.itr_ratio = 100;
+		test_config.analog.channel_5a.type = CURRENT;
+		
+		test_config.analog.channel_6a.adc_to_sec_ratio = 10;
+		test_config.analog.channel_6a.filter = DFT;
+		test_config.analog.channel_6a.is_enabled = true;
+		test_config.analog.channel_6a.itr_ratio = 100;
+		test_config.analog.channel_6a.type = CURRENT;
 	
-	test_config.analog.channel_6a.adc_to_sec_ratio = 10;
-	test_config.analog.channel_6a.filter = DFT;
-	test_config.analog.channel_6a.is_enabled = true;
-	test_config.analog.channel_6a.itr_ratio = 1;
-	test_config.analog.channel_6a.type = CURRENT;
-	
-	test_config.analog.channel_0b.adc_to_sec_ratio = 10;
-	test_config.analog.channel_0b.filter = DFT;
-	test_config.analog.channel_0b.is_enabled = true;
-	test_config.analog.channel_0b.itr_ratio = 1;
-	test_config.analog.channel_0b.type = CURRENT;
-	
-	test_config.analog.channel_1b.adc_to_sec_ratio = 10;
-	test_config.analog.channel_1b.filter = DFT;
-	test_config.analog.channel_1b.is_enabled = true;
-	test_config.analog.channel_1b.itr_ratio = 1;
-	test_config.analog.channel_1b.type = CURRENT;
-								
-	test_config.analog.channel_2b.adc_to_sec_ratio = 10;
-	test_config.analog.channel_2b.filter = DFT;
-	test_config.analog.channel_2b.is_enabled = true;
-	test_config.analog.channel_2b.itr_ratio = 1;
-	test_config.analog.channel_2b.type = CURRENT;
-								
-	test_config.analog.channel_4b.adc_to_sec_ratio = 10;
-	test_config.analog.channel_4b.filter = DFT;
-	test_config.analog.channel_4b.is_enabled = true;
-	test_config.analog.channel_4b.itr_ratio = 1;
-	test_config.analog.channel_4b.type = CURRENT;
-								
-	test_config.analog.channel_5b.adc_to_sec_ratio = 10;
-	test_config.analog.channel_5b.filter = DFT;
-	test_config.analog.channel_5b.is_enabled = true;
-	test_config.analog.channel_5b.itr_ratio = 1;
-	test_config.analog.channel_5b.type = CURRENT;
-								
-	test_config.analog.channel_6b.adc_to_sec_ratio = 10;
-	test_config.analog.channel_6b.filter = DFT;
-	test_config.analog.channel_6b.is_enabled = true;
-	test_config.analog.channel_6b.itr_ratio = 1;
-	test_config.analog.channel_6b.type = CURRENT;
 	
 //	ansi87t.pkp = 0.3;
 //	ansi87t.point_slp2 = 3;
@@ -143,7 +191,7 @@ void real_time_init(void)
 //	ansi87t.unrestrained_pkp = 8;
 //	ansi87t.voltage_wd1 = 440;
 //	ansi87t.voltage_wd2 = 138;	
-//	ANSI87T_Init(&ansi87t, 440, 138, 100, 30, 100, 0.3, 8, 0.25, 0.75);
+	ANSI87T_Init(&ansi87t, 440, 138, 100, 30, 100, 0.3, 8, 0.25, 0.75);
 	
 	
 	//ANSI21 parametrização
@@ -160,7 +208,7 @@ void real_time_init(void)
 	ANSI51_Init(&ansi51, 0.5, 5.5, 1041.67e-6, STANDARD_2, 1, zlt1, zlt0, 5.0, 440000.0 / 115.0, 1000.0 / 5.0, true, true, true);
 	
 	//ANSI87B parametrização
-	ANSI87B_Init(&ansi87b, 2000, 1000, 10000, 0.2, 0.5, 4);
+//	ANSI87B_Init(&ansi87b, 2000, 10000, 20000, 0.2, 0.5, 4);
 	
 	
 	config_set(&test_config);
@@ -173,7 +221,7 @@ void real_time_init(void)
 
 void real_time_task(void *argument)
 {
-//	current ansi87t_current = { 0 };
+	current ansi87t_current = { 0 };
 	complex_t IphA;
 	complex_t IphB;
 	complex_t IphC;
@@ -205,72 +253,73 @@ void real_time_task(void *argument)
 		// Do stuff here as needed
 		execute_signal_processing();
 		
-//		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].real));
-//		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].imag));
-//		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].real));
-//		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].imag));
-//		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].real));
-//		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].imag));
-//		
-//		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].real));
-//		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].imag));
-//		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].real));
-//		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].imag));
-//		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].real));
-//		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].imag));
+		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].real));
+		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].imag));
+		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].real));
+		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].imag));
+		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].real));
+		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].imag));
 		
-//		signal_processing_real_get(CHANNEL_0A, 1, &(IphA.real));
-//		signal_processing_imag_get(CHANNEL_0A, 1, &(IphA.imag));
-//		signal_processing_real_get(CHANNEL_1A, 1, &(IphB.real));
-//		signal_processing_imag_get(CHANNEL_1A, 1, &(IphB.imag));
-//		signal_processing_real_get(CHANNEL_2A, 1, &(IphC.real));
-//		signal_processing_imag_get(CHANNEL_2A, 1, &(IphC.imag));
-//		
-//		signal_processing_real_get(CHANNEL_4A, 1, &(VphA.real));
-//		signal_processing_imag_get(CHANNEL_4A, 1, &(VphA.imag));
-//		signal_processing_real_get(CHANNEL_5A, 1, &(VphB.real));
-//		signal_processing_imag_get(CHANNEL_5A, 1, &(VphB.imag));
-//		signal_processing_real_get(CHANNEL_6A, 1, &(VphC.real));
-//		signal_processing_imag_get(CHANNEL_6A, 1, &(VphC.imag));
+		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].real));
+		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].imag));
+		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].real));
+		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].imag));
+		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].real));
+		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].imag));
 		
-//		ANSI87T_Currents_Init(&ansi87t, &ansi87t_current);
-//		ANSI87T_Step(&ansi87t);
+		signal_processing_real_get(CHANNEL_0A, 1, &(IphA.real));
+		signal_processing_imag_get(CHANNEL_0A, 1, &(IphA.imag));
+		signal_processing_real_get(CHANNEL_1A, 1, &(IphB.real));
+		signal_processing_imag_get(CHANNEL_1A, 1, &(IphB.imag));
+		signal_processing_real_get(CHANNEL_2A, 1, &(IphC.real));
+		signal_processing_imag_get(CHANNEL_2A, 1, &(IphC.imag));
+		
+		signal_processing_real_get(CHANNEL_4A, 1, &(VphA.real));
+		signal_processing_imag_get(CHANNEL_4A, 1, &(VphA.imag));
+		signal_processing_real_get(CHANNEL_5A, 1, &(VphB.real));
+		signal_processing_imag_get(CHANNEL_5A, 1, &(VphB.imag));
+		signal_processing_real_get(CHANNEL_6A, 1, &(VphC.real));
+		signal_processing_imag_get(CHANNEL_6A, 1, &(VphC.imag));
+		
+		ANSI87T_Currents_Init(&ansi87t, &ansi87t_current);
+		ANSI87T_Step(&ansi87t);
 		
 		//ANSI 87B currents
-		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87b.current[0][0]));
-		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87b.current[0][1]));
-		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87b.current[0][2]));
-		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87b.current[0][3]));
-		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87b.current[0][4]));
-		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87b.current[0][5]));
-		
-		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87b.current[1][0]));
-		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87b.current[1][1]));
-		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87b.current[1][2]));
-		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87b.current[1][3]));
-		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87b.current[1][4]));
-		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87b.current[1][5]));
-		
-		signal_processing_real_get(CHANNEL_4B, 1, &(ansi87b.current[2][0]));
-		signal_processing_imag_get(CHANNEL_4B, 1, &(ansi87b.current[2][1]));
-		signal_processing_real_get(CHANNEL_5B, 1, &(ansi87b.current[2][2]));
-		signal_processing_imag_get(CHANNEL_5B, 1, &(ansi87b.current[2][3]));
-		signal_processing_real_get(CHANNEL_6B, 1, &(ansi87b.current[2][4]));
-		signal_processing_imag_get(CHANNEL_6B, 1, &(ansi87b.current[2][5]));
-		
-		signal_processing_real_get(CHANNEL_0B, 1, &(ansi87b.current[3][0]));
-		signal_processing_imag_get(CHANNEL_0B, 1, &(ansi87b.current[3][1]));
-		signal_processing_real_get(CHANNEL_1B, 1, &(ansi87b.current[3][2]));
-		signal_processing_imag_get(CHANNEL_1B, 1, &(ansi87b.current[3][3]));
-		signal_processing_real_get(CHANNEL_2B, 1, &(ansi87b.current[3][4]));
-		signal_processing_imag_get(CHANNEL_2B, 1, &(ansi87b.current[3][5]));
-				
-		
-		//ANSI 87B step
-		ANSI87B_Step(&ansi87b);
-		
+//		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87b.current[0][0]));
+//		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87b.current[0][1]));
+//		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87b.current[0][2]));
+//		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87b.current[0][3]));
+//		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87b.current[0][4]));
+//		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87b.current[0][5]));
+//		
+//		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87b.current[1][0]));
+//		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87b.current[1][1]));
+//		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87b.current[1][2]));
+//		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87b.current[1][3]));
+//		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87b.current[1][4]));
+//		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87b.current[1][5]));
+//		
+//		signal_processing_real_get(CHANNEL_4B, 1, &(ansi87b.current[2][0]));
+//		signal_processing_imag_get(CHANNEL_4B, 1, &(ansi87b.current[2][1]));
+//		signal_processing_real_get(CHANNEL_5B, 1, &(ansi87b.current[2][2]));
+//		signal_processing_imag_get(CHANNEL_5B, 1, &(ansi87b.current[2][3]));
+//		signal_processing_real_get(CHANNEL_6B, 1, &(ansi87b.current[2][4]));
+//		signal_processing_imag_get(CHANNEL_6B, 1, &(ansi87b.current[2][5]));
+//		
+//		signal_processing_real_get(CHANNEL_0B, 1, &(ansi87b.current[3][0]));
+//		signal_processing_imag_get(CHANNEL_0B, 1, &(ansi87b.current[3][1]));
+//		signal_processing_real_get(CHANNEL_1B, 1, &(ansi87b.current[3][2]));
+//		signal_processing_imag_get(CHANNEL_1B, 1, &(ansi87b.current[3][3]));
+//		signal_processing_real_get(CHANNEL_2B, 1, &(ansi87b.current[3][4]));
+//		signal_processing_imag_get(CHANNEL_2B, 1, &(ansi87b.current[3][5]));
+//				
+//		
+//		//ANSI 87B step
+//		ANSI87B_Step(&ansi87b);
+//		
 		//ANSI 87B trip
-		if (ansi87b.trip)
+		ANSI87T_Step(&ansi87t);
+		if (ansi87t.trip[0] || ansi87t.trip[1] || ansi87t.trip[2])
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
 		}
@@ -278,7 +327,7 @@ void real_time_task(void *argument)
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_RESET);
 		}
-		
+//		
 //		//ANSI 21 sets
 //		ANSI21_Set_current(&ansi21_current, IphA, IphB, IphC);
 //		ANSI21_Set_voltage(&ansi21_voltage, VphA, VphB, VphC);
