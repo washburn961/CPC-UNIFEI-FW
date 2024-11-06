@@ -454,9 +454,9 @@ void real_time_task(void *argument)
 //		}
 //		
 		
-		//ansi87b - ARRUMAR AS VARIÀVEIS
+		//ansi87b
 		
-		if (ansi87t.trip[0] || ansi87t.trip[1] || ansi87t.trip[2])
+		if (ansi87b.trip)
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
 		}
