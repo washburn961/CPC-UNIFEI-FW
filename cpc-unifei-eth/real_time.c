@@ -458,11 +458,11 @@ void real_time_task(void *argument)
 		
 		if (ansi87b.trip)
 		{
-			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
 		}
 		else
 		{
-			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_RESET);
 		}
 		
 		//ansi87t
