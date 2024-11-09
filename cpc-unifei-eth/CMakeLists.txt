@@ -4,7 +4,7 @@ project(cpc-unifei-eth LANGUAGES C CXX ASM)
 
 find_bsp(ID com.sysprogs.project_importers.stm32.cubemx SOURCE_PROJECT cpc-unifei-eth.ioc)
 
-bsp_include_directories(. ../phasor-estimation-filters/phasorfilters/inc Middlewares/ST/STM32_USB_Device_Library/Core/Inc USB_DEVICE/App USB_DEVICE/Target Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc power-system-protection/src/include)
+bsp_include_directories(. ../phasor-estimation-filters/phasorfilters/inc Middlewares/ST/STM32_USB_Device_Library/Core/Inc USB_DEVICE/App USB_DEVICE/Target Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc power-system-protection/src/include iec61850)
 add_bsp_based_executable(
 	NAME cpc-unifei-eth
 	GENERATE_BIN
@@ -28,7 +28,6 @@ add_bsp_based_executable(
 		${BSP_ROOT}/phasorfilters/src/half_cycle_fourier_transform.c
 		${BSP_ROOT}/phasorfilters/src/ring_buffer.c
 		${BSP_ROOT}/phasorfilters/src/sine_filter.c
-		${BSP_ROOT}/goose_frame.h
 		${BSP_ROOT}/iec61850/ber.h
 		${BSP_ROOT}/iec61850/goose.h
 		${BSP_ROOT}/iec61850/goose_publisher.h
@@ -70,6 +69,8 @@ add_bsp_based_executable(
 		${BSP_ROOT}/power-system-protection/src/ANSI21.c
 		${BSP_ROOT}/power-system-protection/src/ANSI67.c
 		${BSP_ROOT}/power-system-protection/src/include/ANSI21.h
-		${BSP_ROOT}/power-system-protection/src/include/ANSI67.h)
-target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc ../../../iec61850/iec61850 iec61850 iec61850 power-system-protection/src/include src/include src/include src/include iec61850 iec61850 power-system-protection/src/include power-system-protection/src/include)
+		${BSP_ROOT}/power-system-protection/src/include/ANSI67.h
+		${BSP_ROOT}/goose_server.h
+		${BSP_ROOT}/goose_server.c)
+target_include_directories(cpc-unifei-eth PRIVATE lua-5.4.7/src phasorfilters/inc ../../../iec61850/iec61850 iec61850 iec61850 power-system-protection/src/include src/include src/include src/include iec61850 iec61850 power-system-protection/src/include power-system-protection/src/include iec61850 iec61850)
 set_source_files_properties(${BSP_ROOT}/power-system-protection/src/ANSI87B.c ${BSP_ROOT}/power-system-protection/src/include/ANSI87B.h ${BSP_ROOT}/power-system-protection/src/include/ANSI87T.h ${BSP_ROOT}/ads8686s_low_level.c ${BSP_ROOT}/ads8686s_low_level.h ${BSP_ROOT}/lua-5.4.7/lua-5.4.7/src/luac.c ${BSP_ROOT}/lua-5.4.7/lua-5.4.7/src/lua.c ${BSP_ROOT}/src/include/ANSI67.h ${BSP_ROOT}/src/include/ANSI21.h ${BSP_ROOT}/src/include/ANSI50.h ${BSP_ROOT}/goose.h ${BSP_ROOT}/goose.c ${BSP_ROOT}/lua-5.4.7/src/lua.c ${BSP_ROOT}/lua-5.4.7/src/luac.c PROPERTIES HEADER_FILE_ONLY TRUE)

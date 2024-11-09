@@ -13,6 +13,7 @@
 #include "ANSI51.h"
 #include "ANSI87B.h"
 #include "udp_server.h"
+#include "goose_server.h"
 
 #define SAMPLING_RATE_CONTROL_FLAG 1
 #define ADC_BUSY_FLAG 2
@@ -261,6 +262,9 @@ void real_time_init(void)
 
 void real_time_task(void *argument)
 {
+	goose_server_init();
+	osDelay(100);
+	
 	current ansi87t_current = { 0 };
 	
 	//ansi21  ansi50  ansi51
@@ -396,28 +400,34 @@ void real_time_task(void *argument)
 		if (ansi21_mp.is_tripped[0] || ansi21_mp.is_tripped[1] || ansi21_mp.is_tripped[2])
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_SET);
+			goose_field_update(PDIS1, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT3_A_OUT_GPIO_Port, OUT3_A_OUT_Pin, GPIO_PIN_RESET);
+			goose_field_update(PDIS1, 0x0);
 		}
 		
 		if (ansi21_mg.is_tripped[0] || ansi21_mg.is_tripped[1] || ansi21_mg.is_tripped[2])
 		{
 			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_SET);
+			goose_field_update(PDIS2, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT1_A_OUT_GPIO_Port, OUT1_A_OUT_Pin, GPIO_PIN_RESET);
+			goose_field_update(PDIS2, 0x0);
 		}
 		
 		if (ansi21_qg.is_tripped[0] || ansi21_qg.is_tripped[1] || ansi21_qg.is_tripped[2])
 		{
 			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_SET);
+			goose_field_update(PDIS3, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT2_A_OUT_GPIO_Port, OUT2_A_OUT_Pin, GPIO_PIN_RESET);
+			goose_field_update(PDIS3, 0x0);
 		}
 		
 		
@@ -426,10 +436,12 @@ void real_time_task(void *argument)
 		if (ansi50.is_tripped[0] || ansi50.is_tripped[1] || ansi50.is_tripped[2])
 		{
 			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_SET);
+			goose_field_update(PIOC, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT4_A_OUT_GPIO_Port, OUT4_A_OUT_Pin, GPIO_PIN_RESET);
+			goose_field_update(PIOC, 0x0);
 		}
 		
 		
@@ -438,10 +450,12 @@ void real_time_task(void *argument)
 		if (ansi51.is_tripped[0] || ansi51.is_tripped[1] || ansi51.is_tripped[2])
 		{
 			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_SET);
+			goose_field_update(PTOC, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT1_B_OUT_GPIO_Port, OUT1_B_OUT_Pin, GPIO_PIN_RESET);
+			goose_field_update(PTOC, 0x0);
 		}
 		
 		if (ansi51.is_pickupped[0] || ansi51.is_pickupped[1] || ansi51.is_pickupped[2])
@@ -459,10 +473,12 @@ void real_time_task(void *argument)
 		if (ansi87t.trip[0] || ansi87t.trip[1] || ansi87t.trip[2])
 		{
 			HAL_GPIO_WritePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin, GPIO_PIN_SET);
+			goose_field_update(PDIFB, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin, GPIO_PIN_RESET);
+			goose_field_update(PDIFB, 0x0);
 		}
 		
 		//ansi87t
@@ -470,13 +486,15 @@ void real_time_task(void *argument)
 		if (ansi87t.trip[0] || ansi87t.trip[1] || ansi87t.trip[2])
 		{
 			HAL_GPIO_WritePin(OUT4_B_OUT_GPIO_Port, OUT4_B_OUT_Pin, GPIO_PIN_SET);
+			goose_field_update(PDIFT, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT4_B_OUT_GPIO_Port, OUT4_B_OUT_Pin, GPIO_PIN_RESET);
+			goose_field_update(PDIFT, 0x0);
 		}
 		
-		generate_and_send_magnitude_string();
+//		generate_and_send_magnitude_string();
 		
 		HAL_GPIO_WritePin(PROCESSING_TIMING_GPIO_Port, PROCESSING_TIMING_Pin, GPIO_PIN_RESET);
 		
