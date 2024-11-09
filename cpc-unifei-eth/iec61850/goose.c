@@ -57,8 +57,8 @@ goose_handle* goose_init(uint8_t source[MAC_ADDRESS_SIZE], uint8_t destination[M
 	memcpy(handle->frame->destination, destination, MAC_ADDRESS_SIZE);
 	handle->frame->ethertype[0] = GOOSE_ETHERTYPE_0;
 	handle->frame->ethertype[1] = GOOSE_ETHERTYPE_1;
-	handle->frame->app_id[0] = 0x0;
-	handle->frame->app_id[1] = 0x0;
+	handle->frame->app_id[0] = app_id[0];
+	handle->frame->app_id[1] = app_id[1];
 	handle->frame->len = 0x0;
 	handle->frame->reserved_1[0] = 0x0;
 	handle->frame->reserved_1[1] = 0x0;

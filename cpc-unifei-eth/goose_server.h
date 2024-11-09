@@ -10,6 +10,7 @@
 #define PTOC 4
 #define PDIFT 5
 #define PDIFB 6
+#define USER_BUTTON 7
 
 void goose_server_init(void);
 void goose_field_update(uint32_t field, uint8_t value);

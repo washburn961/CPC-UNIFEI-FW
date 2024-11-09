@@ -15,7 +15,7 @@ uint8_t destination[MAC_ADDRESS_SIZE] = { 0x01, 0x0c, 0xcd, 0x01, 0x00, 0x01 };
 uint8_t app_id[APP_ID_SIZE] = { 0x00, 0x05 };
 const char* gocbRef = "UNIFEIDeviceCPC/LLN0$GO$gcb0";
 const char* dataset = "UNIFEIDeviceCPC/LLN0$GOOSE0";
-const char* go_id = "CPC_GOOSE0";
+const char* go_id = "0005";
 uint16_t time_allowed_to_live = 0;
 uint64_t t = 0; // Time in the format from screenshot (UNIX epoch in nanoseconds)
 uint32_t st_num = 0;
@@ -42,6 +42,8 @@ uint8_t pioc_prev_val = 0x0;
 uint8_t ptoc_prev_val = 0x0;
 uint8_t pdift_prev_val = 0x0;
 uint8_t pdifb_prev_val = 0x0;
+uint8_t user_button_prev_val = 0x0;
+uint8_t user_button_curr_val = 0x0;
 
 goose_message_params input_mon_goose_params;
 goose_handle* input_mon_goose_handle;
@@ -64,32 +66,40 @@ void goose_field_update(uint32_t field, uint8_t value)
 	case PDIS1:
 		pdis1_prev_val = pdis1_curr_val;
 		pdis1_curr_val = value;
+		break;
 		
 	case PDIS2:
 		pdis2_prev_val = pdis2_curr_val;
 		pdis2_curr_val = value;
+		break;
 		
 	case PDIS3:
 		pdis3_prev_val = pdis3_curr_val;
 		pdis3_curr_val = value;
+		break;
 		
 	case PIOC:
 		pioc_prev_val = pioc_curr_val;
 		pioc_curr_val = value;
+		break;
 		
 	case PTOC:
 		ptoc_prev_val = ptoc_curr_val;
 		ptoc_curr_val = value;
+		break;
 		
 	case PDIFT:
 		pdift_prev_val = pdift_curr_val;
 		pdift_curr_val = value;
+		break;
 		
 	case PDIFB:
 		pdifb_prev_val = pdifb_curr_val;
 		pdifb_curr_val = value;
+		break;
 		
 	default:
+
 		break;
 	}
 }

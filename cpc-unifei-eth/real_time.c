@@ -348,19 +348,19 @@ void real_time_task(void *argument)
 		
 		//ansi87t
 		
-		signal_processing_real_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].real));
-		signal_processing_imag_get(CHANNEL_0A, 1, &(ansi87t_current.current_wd1[0].imag));
-		signal_processing_real_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].real));
-		signal_processing_imag_get(CHANNEL_1A, 1, &(ansi87t_current.current_wd1[1].imag));
-		signal_processing_real_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].real));
-		signal_processing_imag_get(CHANNEL_2A, 1, &(ansi87t_current.current_wd1[2].imag));
+		signal_processing_real_get(CHANNEL_4B, 1, &(ansi87t_current.current_wd1[0].real));
+		signal_processing_imag_get(CHANNEL_4B, 1, &(ansi87t_current.current_wd1[0].imag));
+		signal_processing_real_get(CHANNEL_5B, 1, &(ansi87t_current.current_wd1[1].real));
+		signal_processing_imag_get(CHANNEL_5B, 1, &(ansi87t_current.current_wd1[1].imag));
+		signal_processing_real_get(CHANNEL_6B, 1, &(ansi87t_current.current_wd1[2].real));
+		signal_processing_imag_get(CHANNEL_6B, 1, &(ansi87t_current.current_wd1[2].imag));
 		
-		signal_processing_real_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].real));
-		signal_processing_imag_get(CHANNEL_4A, 1, &(ansi87t_current.current_wd2[0].imag));
-		signal_processing_real_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].real));
-		signal_processing_imag_get(CHANNEL_5A, 1, &(ansi87t_current.current_wd2[1].imag));
-		signal_processing_real_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].real));
-		signal_processing_imag_get(CHANNEL_6A, 1, &(ansi87t_current.current_wd2[2].imag));
+		signal_processing_real_get(CHANNEL_0B, 1, &(ansi87t_current.current_wd2[0].real));
+		signal_processing_imag_get(CHANNEL_0B, 1, &(ansi87t_current.current_wd2[0].imag));
+		signal_processing_real_get(CHANNEL_1B, 1, &(ansi87t_current.current_wd2[1].real));
+		signal_processing_imag_get(CHANNEL_1B, 1, &(ansi87t_current.current_wd2[1].imag));
+		signal_processing_real_get(CHANNEL_2B, 1, &(ansi87t_current.current_wd2[2].real));
+		signal_processing_imag_get(CHANNEL_2B, 1, &(ansi87t_current.current_wd2[2].imag));
 		
 
 		
@@ -430,6 +430,10 @@ void real_time_task(void *argument)
 			goose_field_update(PDIS3, 0x0);
 		}
 		
+		goose_field_update(
+			PDIFB, 
+			HAL_GPIO_ReadPin(USER_BUTTON_GPIO_Port, USER_BUTTON_Pin) == GPIO_PIN_SET ? 0x1 : 0x0
+			);
 		
 		//ansi50
 		
@@ -473,12 +477,12 @@ void real_time_task(void *argument)
 		if (ansi87t.trip[0] || ansi87t.trip[1] || ansi87t.trip[2])
 		{
 			HAL_GPIO_WritePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin, GPIO_PIN_SET);
-			goose_field_update(PDIFB, 0x1);
+			goose_field_update(PDIFT, 0x1);
 		}
 		else
 		{
 			HAL_GPIO_WritePin(OUT2_B_OUT_GPIO_Port, OUT2_B_OUT_Pin, GPIO_PIN_RESET);
-			goose_field_update(PDIFB, 0x0);
+			goose_field_update(PDIFT, 0x0);
 		}
 		
 		//ansi87t
