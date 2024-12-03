@@ -98,7 +98,7 @@ void goose_publisher_process(void)
         }
     }
 
-    time_elapsed_ns += 1000000000ULL;
+	time_elapsed_ns += 4290677ULL;
     time_elapsed_ms += 1ULL;
 
     semaphore_release(publisher_semaphore);
@@ -125,11 +125,13 @@ void goose_message_housekeeping(goose_message_params* params)
         // Convert st_num and sq_num to network byte order
         uint32_t st_num_net = goose_htonl(params->st_num);
         uint32_t sq_num_net = goose_htonl(params->sq_num);
+	    uint64_t t_net = goose_htonll(time_elapsed_ns);
 
         // Update the PDU with new values
         ber_set(&(params->handle->frame->pdu_list.time_allowed_to_live), (uint8_t*)&time_allowed_to_live_net, sizeof(time_allowed_to_live_net));
         ber_set(&(params->handle->frame->pdu_list.st_num), (uint8_t*)&st_num_net, sizeof(st_num_net));
         ber_set(&(params->handle->frame->pdu_list.sq_num), (uint8_t*)&sq_num_net, sizeof(sq_num_net));
+	    ber_set(&(params->handle->frame->pdu_list.t), (uint8_t*)&t_net, sizeof(t_net));
 
         // Re-encode the GOOSE message and transmit it
         goose_encode(params->handle);
@@ -157,10 +159,12 @@ void goose_message_housekeeping(goose_message_params* params)
         // Convert sq_num to network byte order
         uint32_t sq_num_net = goose_htonl(params->sq_num);
         uint16_t time_allowed_to_live_net = goose_htons(params->current_time_allowed_to_live);
+	    uint64_t t_net = goose_htonll(time_elapsed_ns);
 
         // Update the PDU with the new sq_num and time allowed to live
         ber_set(&(params->handle->frame->pdu_list.sq_num), (uint8_t*)&sq_num_net, sizeof(sq_num_net));
         ber_set(&(params->handle->frame->pdu_list.time_allowed_to_live), (uint8_t*)&time_allowed_to_live_net, sizeof(time_allowed_to_live_net));
+	    ber_set(&(params->handle->frame->pdu_list.t), (uint8_t*)&t_net, sizeof(t_net));
 
         // Re-encode the GOOSE message and transmit it
         goose_encode(params->handle);
@@ -176,9 +180,11 @@ void goose_message_housekeeping(goose_message_params* params)
 
     // Convert sq_num to network byte order
     uint32_t sq_num_net = goose_htonl(params->sq_num);
+	uint64_t t_net = goose_htonll(time_elapsed_ns);
 
     // Update the PDU with the incremented sq_num
     ber_set(&(params->handle->frame->pdu_list.sq_num), (uint8_t*)&sq_num_net, sizeof(sq_num_net));
+	ber_set(&(params->handle->frame->pdu_list.t), (uint8_t*)&t_net, sizeof(t_net));
 
     if (params->current_time_allowed_to_live != params->default_time_allowed_to_live)
     {

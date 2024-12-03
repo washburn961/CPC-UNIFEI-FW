@@ -26,11 +26,12 @@
 #include "octospi.h"
 #include "spi.h"
 #include "tim.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "application.h"
+#include "real_time.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -164,8 +165,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 5;
@@ -237,9 +239,9 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef * hspi)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if (application_analog_busy_semaphore_can_release(GPIO_Pin)) // Replace BUSY_Pin with the actual pin number for your BUSY signal
+	if (real_time_analog_busy_semaphore_can_release(GPIO_Pin)) // Replace BUSY_Pin with the actual pin number for your BUSY signal
 	{
-		application_adc_busy_flag_set();
+		real_time_adc_busy_flag_set();
 	}
 }
 /* USER CODE END 4 */
@@ -312,14 +314,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-	if (htim->Instance == TIM2)
-	{
-		application_goose_flag_set();
-	}
 	
 	if (htim->Instance == TIM3)
 	{
-		application_adc_timing_flag_set();
+		real_time_adc_timing_flag_set();
 	}
   /* USER CODE END Callback 1 */
 }
@@ -333,6 +331,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+	HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_SET);
   while (1)
   {
   }
